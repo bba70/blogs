@@ -2,6 +2,15 @@
 
 Go + React 个人博客系统，作为长期试验田项目。
 
+## Documentation
+
+项目 wiki 位于 [`docs/`](docs/)，采用 spec-driven 组织：每个 phase 一个文件夹，每个子文件夹对应一次提交及其设计。
+
+- [docs/README.md](docs/README.md) — wiki 索引
+- [docs/design.md](docs/design.md) — 跨 phase 的整体架构参考
+- [docs/progress.md](docs/progress.md) — 总体进度表 + 跨 phase 待办
+- [docs/phase-1-blog-core/](docs/phase-1-blog-core/) — Phase 1 子改动（后端 + 前端 scaffold）
+
 ## Tech Stack
 
 | Layer | Choice | Rationale |
@@ -138,29 +147,31 @@ CREATE TABLE post_tags (
 
 ## Implementation Phases
 
-### Phase 1: 博客核心
+> 详细进度见 [docs/progress.md](docs/progress.md)。
 
-- 项目初始化（Go module、docker-compose、Makefile）
-- 后端骨架（config、database、统一响应、中间件）
-- 博客 CRUD API（posts + tags）
-- 前端初始化（Vite + React + TypeScript、路由、API 层）
-- 前端页面（文章列表、文章详情、Markdown 编辑器、标签管理）
+### Phase 1: 博客核心（已完成）
 
-### Phase 2: 用户系统 + 评论
+- [x] 项目初始化（Go module、docker-compose、Makefile）
+- [x] 后端骨架（config、database、统一响应、中间件）
+- [x] 博客 CRUD API（posts + tags）
+- [x] 前端初始化（Vite + React + TypeScript、路由、API 层）
+- [x] 前端页面（文章列表、文章详情、Markdown 编辑器、标签管理）
 
-- 用户注册/登录（JWT）
-- 角色权限（admin / user）
-- 评论系统（支持回复）
-- 后台管理面板
+### Phase 2: 用户系统 + 评论（未开始）
 
-### Phase 3: 图床 + 媒体
+- [ ] 用户注册/登录（JWT）
+- [ ] 角色权限（admin / user）
+- [ ] 评论系统（支持回复）
+- [ ] 后台管理面板
 
-- 图片上传（本地 / OSS）
-- 图片压缩、缩略图
-- 媒体库管理
+### Phase 3: 图床 + 媒体（未开始）
 
-### Phase 4: 试验田功能
+- [ ] 图片上传（本地 / OSS）
+- [ ] 图片压缩、缩略图
+- [ ] 媒体库管理
 
-- 音视频处理
-- AI 助手集成
-- 数据统计面板
+### Phase 4: 试验田功能（未开始）
+
+- [ ] 音视频处理
+- [ ] AI 助手集成
+- [ ] 数据统计面板

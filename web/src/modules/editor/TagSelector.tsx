@@ -15,7 +15,7 @@ export default function TagSelector({ selectedTags, onChange }: TagSelectorProps
 
   function toggle(name: string) {
     if (selectedTags.includes(name)) {
-      onChange(selectedTags.filter((t) => t !== name))
+      onChange(selectedTags.filter((tag) => tag !== name))
     } else {
       onChange([...selectedTags, name])
     }
@@ -28,16 +28,16 @@ export default function TagSelector({ selectedTags, onChange }: TagSelectorProps
           key={tag.id}
           type="button"
           onClick={() => toggle(tag.name)}
-          className={`rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${
+          className={`min-h-8 rounded-lg border px-3 py-1 text-xs font-medium transition-colors ${
             selectedTags.includes(tag.name)
-              ? 'bg-primary text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              ? 'border-primary bg-primary text-white'
+              : 'border-line bg-white text-muted hover:border-primary hover:text-primary'
           }`}
         >
           {tag.name}
         </button>
       ))}
-      {tags.length === 0 && <span className="text-xs text-gray-400">暂无标签</span>}
+      {tags.length === 0 && <span className="text-xs text-muted">暂无标签</span>}
     </div>
   )
 }

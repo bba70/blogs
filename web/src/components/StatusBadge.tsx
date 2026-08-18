@@ -1,12 +1,14 @@
 import type { PostStatus } from '@/types'
 
 export default function StatusBadge({ status }: { status: PostStatus }) {
-  const styles =
-    status === 'published'
-      ? 'bg-green-100 text-green-700'
-      : 'bg-yellow-100 text-yellow-700'
   return (
-    <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${styles}`}>
+    <span
+      className={`inline-flex min-h-7 items-center rounded-lg border px-2.5 py-1 text-xs font-medium ${
+        status === 'published'
+          ? 'border-[#dfe7df] bg-[#f6faf6] text-[#4f6b53]'
+          : 'border-[#eee4cd] bg-[#fffaf0] text-[#8a6a31]'
+      }`}
+    >
       {status === 'published' ? '已发布' : '草稿'}
     </span>
   )

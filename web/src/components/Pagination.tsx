@@ -10,32 +10,36 @@ export default function Pagination({ page, perPage, total, onPageChange }: Pagin
   if (totalPages <= 1) return null
 
   return (
-    <div className="flex items-center justify-center gap-2 py-8">
+    <nav className="flex flex-wrap items-center justify-center gap-2 py-9" aria-label="文章分页">
       <button
+        type="button"
         onClick={() => onPageChange(page - 1)}
         disabled={page <= 1}
-        className="rounded border border-gray-300 px-3 py-1 text-sm disabled:opacity-40"
+        className="min-h-10 rounded-[10px] border border-line bg-white px-4 text-sm text-muted hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
       >
         上一页
       </button>
-      {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+      {Array.from({ length: totalPages }, (_, index) => index + 1).map((currentPage) => (
         <button
-          key={p}
-          onClick={() => onPageChange(p)}
-          className={`rounded px-3 py-1 text-sm ${
-            p === page ? 'bg-primary text-white' : 'border border-gray-300 hover:bg-gray-100'
+          type="button"
+          key={currentPage}
+          onClick={() => onPageChange(currentPage)}
+          aria-current={currentPage === page ? 'page' : undefined}
+          className={`min-h-10 min-w-10 rounded-[10px] border px-3 text-sm ${
+            currentPage === page ? 'border-primary bg-primary text-white' : 'border-line bg-white text-muted hover:border-primary hover:text-primary'
           }`}
         >
-          {p}
+          {currentPage}
         </button>
       ))}
       <button
+        type="button"
         onClick={() => onPageChange(page + 1)}
         disabled={page >= totalPages}
-        className="rounded border border-gray-300 px-3 py-1 text-sm disabled:opacity-40"
+        className="min-h-10 rounded-[10px] border border-line bg-white px-4 text-sm text-muted hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:opacity-40"
       >
         下一页
       </button>
-    </div>
+    </nav>
   )
 }

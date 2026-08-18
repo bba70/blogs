@@ -2,6 +2,270 @@
 @plugin "@tailwindcss/typography";
 
 @theme {
-  --color-primary: #2563eb;
-  --color-primary-dark: #1d4ed8;
+  --color-primary: #5868b2;
+  --color-primary-dark: #46569f;
+  --color-ink: #171717;
+  --color-muted: #737373;
+  --color-line: #e7e7e5;
+  --color-canvas: #ffffff;
+  --color-soft: #f7f7f6;
+}
+
+:root {
+  color: #171717;
+  background: #ffffff;
+  font-family:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #ffffff;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid #5868b2;
+  outline-offset: 3px;
+}
+
+::selection {
+  color: #171717;
+  background: #e8eafd;
+}
+
+.site-mark {
+  position: relative;
+  display: inline-block;
+  width: 30px;
+  height: 30px;
+  border: 2px solid #171717;
+  border-right-color: transparent;
+}
+
+.site-mark::before,
+.site-mark::after {
+  position: absolute;
+  content: "";
+  background: #171717;
+}
+
+.site-mark::before {
+  top: -5px;
+  right: 2px;
+  width: 9px;
+  height: 2px;
+}
+
+.site-mark::after {
+  top: -9px;
+  right: 5px;
+  width: 2px;
+  height: 9px;
+}
+
+.search-icon {
+  position: relative;
+  display: block;
+  width: 16px;
+  height: 16px;
+  border: 1.7px solid currentColor;
+  border-radius: 50%;
+}
+
+.search-icon::after {
+  position: absolute;
+  right: -5px;
+  bottom: -3px;
+  width: 7px;
+  height: 1.7px;
+  content: "";
+  background: currentColor;
+  transform: rotate(45deg);
+  transform-origin: left center;
+}
+
+.feature-art {
+  position: relative;
+  min-height: 320px;
+  overflow: hidden;
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(#ececeb 1px, transparent 1px),
+    linear-gradient(90deg, #ececeb 1px, transparent 1px);
+  background-size: 25% 50%;
+}
+
+.feature-art::before {
+  position: absolute;
+  right: 16%;
+  bottom: -36%;
+  width: 46%;
+  aspect-ratio: 1;
+  content: "";
+  border: 1px solid #bcbcbc;
+  border-radius: 50%;
+}
+
+.feature-art::after {
+  position: absolute;
+  top: 50%;
+  left: 27%;
+  width: 42%;
+  height: 1px;
+  content: "";
+  background: #171717;
+  transform: rotate(-35deg);
+  transform-origin: center;
+}
+
+.feature-dots {
+  position: absolute;
+  bottom: 22%;
+  left: 9%;
+  width: 54px;
+  height: 42px;
+  background-image: radial-gradient(circle, #5868b2 1.5px, transparent 1.5px);
+  background-size: 9px 9px;
+}
+
+.feature-accent {
+  position: absolute;
+  top: 40%;
+  right: 9%;
+  width: 13px;
+  height: 13px;
+  background: #5868b2;
+}
+
+.feature-word {
+  position: absolute;
+  top: 16%;
+  left: 34%;
+  z-index: 1;
+  font-family: "Songti SC", "STSong", "SimSun", serif;
+  font-size: clamp(4rem, 8vw, 7.5rem);
+  font-weight: 700;
+  line-height: 0.82;
+  letter-spacing: -0.12em;
+}
+
+.article-art {
+  position: relative;
+  width: 148px;
+  min-width: 148px;
+  height: 92px;
+  overflow: hidden;
+  background: #fbfbfa;
+  border-right: 1px solid #eeeeec;
+}
+
+.article-art-cube::before,
+.article-art-cube::after {
+  position: absolute;
+  top: 25px;
+  left: 52px;
+  width: 42px;
+  height: 42px;
+  content: "";
+  border: 1px solid #717171;
+  transform: rotate(30deg) skewY(-30deg) scaleY(0.86);
+}
+
+.article-art-cube::after {
+  top: 15px;
+  left: 61px;
+  border-color: #5868b2;
+  opacity: 0.55;
+}
+
+.article-art-wave::before,
+.article-art-wave::after {
+  position: absolute;
+  top: 36px;
+  left: 20px;
+  width: 108px;
+  height: 34px;
+  content: "";
+  border-top: 1px solid #858585;
+  border-radius: 50%;
+  transform: rotate(-8deg);
+}
+
+.article-art-wave::after {
+  top: 45px;
+  left: 26px;
+  border-color: #5868b2;
+  opacity: 0.7;
+}
+
+.article-art-radial::before {
+  position: absolute;
+  top: 23px;
+  left: 50px;
+  width: 46px;
+  height: 46px;
+  content: "";
+  background:
+    linear-gradient(90deg, transparent 49%, #909090 50%, transparent 51%),
+    linear-gradient(45deg, transparent 49%, #909090 50%, transparent 51%),
+    linear-gradient(-45deg, transparent 49%, #909090 50%, transparent 51%);
+  border: 1px solid #d4d4d2;
+  border-radius: 50%;
+}
+
+.article-art-radial::after {
+  position: absolute;
+  top: 42px;
+  left: 69px;
+  width: 9px;
+  height: 9px;
+  content: "";
+  background: #5868b2;
+  border-radius: 50%;
+}
+
+.profile-mark {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border: 1px solid #b8b8b6;
+  transform: rotate(30deg) skewY(-30deg) scaleY(0.86);
+}
+
+.profile-mark::before {
+  position: absolute;
+  inset: 11px;
+  content: "";
+  border: 1px solid #5868b2;
+}
+
+@media (max-width: 720px) {
+  .feature-art {
+    min-height: 230px;
+  }
+
+  .article-art {
+    display: none;
+  }
 }

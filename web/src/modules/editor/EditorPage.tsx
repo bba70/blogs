@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate, useParams } from 'react-router'
 import { usePostStore } from '@/stores'
 import type { PostStatus } from '@/types'
@@ -39,7 +39,7 @@ export default function EditorPage() {
   const { currentPost, fetchPost, createPost, updatePost, loading, error } = usePostStore()
 
   const [formState, setFormState] = useState<FormState>(initialState)
-  const initializedRef = useRef(false)
+  const [loadedSlug, setLoadedSlug] = useState<string | null>(null)
 
   const isEdit = Boolean(slug)
 
@@ -50,8 +50,9 @@ export default function EditorPage() {
   }, [slug, fetchPost])
 
   useEffect(() => {
-    if (isEdit && currentPost && slug && !initializedRef.current) {
-      initializedRef.current = true
+    if (slug && currentPost?.slug === slug && loadedSlug !== slug) {
+      // The post arrives asynchronously from the store and seeds an editable local draft.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setFormState({
         title: currentPost.title,
         postSlug: currentPost.slug,
@@ -61,16 +62,12 @@ export default function EditorPage() {
         tagNames: currentPost.tags,
         autoSlug: false,
       })
-    } else if (!isEdit && !initializedRef.current) {
-      initializedRef.current = true
+      setLoadedSlug(slug)
+    } else if (!slug && loadedSlug !== null) {
       setFormState(initialState)
+      setLoadedSlug(null)
     }
-  }, [isEdit, currentPost, slug])
-
-  // Reset initialized flag when switching between create/edit modes
-  useEffect(() => {
-    initializedRef.current = false
-  }, [isEdit])
+  }, [currentPost, loadedSlug, slug])
 
   const setTitle = useCallback((newTitle: string) => {
     setFormState((prev) => ({ ...prev, title: newTitle }))
@@ -201,7 +198,13 @@ export default function EditorPage() {
         <div>
           <label className="mb-2 block text-sm font-medium text-ink">内容</label>
           <div className="min-h-[380px] overflow-hidden rounded-[10px] border border-line bg-white focus-within:border-primary">
-            <MilkdownEditor initialContent={formState.content} onChange={setContent} />
+            {(!isEdit || loadedSlug === slug) && (
+              <MilkdownEditor
+                key={isEdit ? slug : 'new'}
+                initialContent={formState.content}
+                onChange={setContent}
+              />
+            )}
           </div>
         </div>
 

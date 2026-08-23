@@ -2,12 +2,20 @@ package blog
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
+
+// isUniqueViolation 判断是否为唯一约束冲突（PostgreSQL 错误码 23505）。
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
+}
 
 type Repository struct {
 	db *pgxpool.Pool
@@ -105,12 +113,16 @@ func (r *Repository) GetPostBySlug(ctx context.Context, slug string) (*Post, err
 }
 
 func (r *Repository) CreatePost(ctx context.Context, p *Post) error {
-	return r.db.QueryRow(ctx,
+	err := r.db.QueryRow(ctx,
 		`INSERT INTO posts (title, slug, content, summary, status, published_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING id, created_at, updated_at`,
 		p.Title, p.Slug, p.Content, p.Summary, p.Status, p.PublishedAt,
 	).Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
+	if isUniqueViolation(err) {
+		return ErrSlugExists
+	}
+	return err
 }
 
 func (r *Repository) UpdatePost(ctx context.Context, slug string, p *UpdatePostReq) (*Post, error) {
@@ -127,6 +139,9 @@ func (r *Repository) UpdatePost(ctx context.Context, slug string, p *UpdatePostR
 	if p.Title != nil {
 		addSet("title", *p.Title)
 	}
+	if p.Slug != nil {
+		addSet("slug", *p.Slug)
+	}
 	if p.Content != nil {
 		addSet("content", *p.Content)
 	}
@@ -135,15 +150,18 @@ func (r *Repository) UpdatePost(ctx context.Context, slug string, p *UpdatePostR
 	}
 	if p.Status != nil {
 		addSet("status", *p.Status)
+		if *p.Status == StatusPublished {
+			// 首次发布记录时间；取消发布后再发布保留原发布时间。
+			sets = append(sets, "published_at = COALESCE(published_at, NOW())")
+		}
 	}
 
 	if len(sets) == 0 && p.Tags == nil {
 		return r.GetPostBySlug(ctx, slug)
 	}
 
-	sets = append(sets, fmt.Sprintf("updated_at = $%d", argIdx))
-	args = append(args, "NOW()")
-	argIdx++
+	// updated_at 直接由数据库生成，不能作为绑定参数传入。
+	sets = append(sets, "updated_at = NOW()")
 
 	args = append(args, slug)
 	whereIdx := argIdx
@@ -155,6 +173,9 @@ func (r *Repository) UpdatePost(ctx context.Context, slug string, p *UpdatePostR
 		if err == pgx.ErrNoRows {
 			return nil, nil
 		}
+		if isUniqueViolation(err) {
+			return nil, ErrSlugExists
+		}
 		return nil, err
 	}
 
@@ -164,7 +185,12 @@ func (r *Repository) UpdatePost(ctx context.Context, slug string, p *UpdatePostR
 		}
 	}
 
-	return r.GetPostBySlug(ctx, slug)
+	// slug 可能被本次更新修改，需按新 slug 回读。
+	newSlug := slug
+	if p.Slug != nil {
+		newSlug = *p.Slug
+	}
+	return r.GetPostBySlug(ctx, newSlug)
 }
 
 func (r *Repository) DeletePost(ctx context.Context, slug string) error {

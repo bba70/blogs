@@ -28,6 +28,3 @@ Desktop.ini
 
 # Claude Code local settings (keep shared settings.json, ignore local overrides)
 .claude/settings.local.json
-
-# Project wiki (local only, not tracked)
-docs/

@@ -4,12 +4,12 @@ Go + React 个人博客系统，作为长期试验田项目。
 
 ## Documentation
 
-项目 wiki 位于 [`docs/`](docs/)，采用 spec-driven 组织：每个 phase 一个文件夹，每个子文件夹对应一次提交及其设计。
+项目文档位于 [`docs/`](docs/)，按 phase 和改动单元组织。每次改动只保留两份定义：
 
-- [docs/README.md](docs/README.md) — wiki 索引
-- [docs/design.md](docs/design.md) — 跨 phase 的整体架构参考
-- [docs/progress.md](docs/progress.md) — 总体进度表 + 跨 phase 待办
-- [docs/phase-1-blog-core/](docs/phase-1-blog-core/) — Phase 1 子改动（后端 + 前端 scaffold）
+- `product.md` — 本次功能及其产品形态
+- `design.md` — 前端、后端与数据层的实现设计
+
+全局视觉规范单独维护在 [`docs/ui/`](docs/ui/)，目录约定和现有文档索引见 [`docs/README.md`](docs/README.md)。
 
 ## Tech Stack
 
@@ -146,8 +146,6 @@ CREATE TABLE post_tags (
 ```
 
 ## Implementation Phases
-
-> 详细进度见 [docs/progress.md](docs/progress.md)。
 
 ### Phase 1: 博客核心（已完成）
 

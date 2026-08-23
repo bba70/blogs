@@ -44,12 +44,14 @@ func main() {
 	handler := blogModule.NewHandler(svc)
 
 	r := chi.NewRouter()
+	// 注意：AllowCredentials 与通配符 origin 不兼容（浏览器会拒绝响应），
+	// 且 JWT 走 Authorization 头、不依赖 cookie，无需 credentials。
+	// Phase 2 接入认证后应把 AllowedOrigins 改为配置项，列出具体域名。
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
-		AllowCredentials: true,
-		MaxAge:           300,
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
+		MaxAge:         300,
 	}))
 	r.Use(chiMiddleware.RequestID)
 	r.Use(chiMiddleware.RealIP)

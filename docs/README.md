@@ -59,5 +59,6 @@ docs/
 | 后端博客核心 | [product.md](phase-1-blog-core/01-backend-scaffold/product.md) | [design.md](phase-1-blog-core/01-backend-scaffold/design.md) |
 | 前端博客核心 | [product.md](phase-1-blog-core/02-frontend-scaffold/product.md) | [design.md](phase-1-blog-core/02-frontend-scaffold/design.md) |
 | 首页与编辑器体验优化 | [product.md](phase-1-blog-core/03-homepage-editor-polish/product.md) | [design.md](phase-1-blog-core/03-homepage-editor-polish/design.md) |
+| 博客接口可靠性增强 | [product.md](phase-1-blog-core/04-backend-api-hardening/product.md) | [design.md](phase-1-blog-core/04-backend-api-hardening/design.md) |
 
 全局 UI 规范见 [`ui/concept-c-spec.md`](ui/concept-c-spec.md)。

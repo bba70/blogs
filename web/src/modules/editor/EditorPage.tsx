@@ -138,32 +138,36 @@ export default function EditorPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">
-        {isEdit ? '编辑文章' : '写文章'}
-      </h1>
+    <div className="mx-auto max-w-[1080px] px-5 py-10 sm:px-8 sm:py-14">
+      <div className="mb-9 border-b border-line pb-7">
+        <p className="text-sm font-medium text-primary">创作空间</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-ink">
+          {isEdit ? '编辑文章' : '新建文章'}
+        </h1>
+        <p className="mt-2 text-sm text-muted">把想法整理成一篇值得长期保留的内容。</p>
+      </div>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-6 rounded-[14px] border border-line bg-white p-5 sm:p-8">
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">标题</label>
+          <label className="mb-2 block text-sm font-medium text-ink">标题</label>
           <input
             type="text"
             value={formState.title}
             onChange={(e) => handleTitleChange(e.target.value)}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+            className="min-h-12 w-full rounded-[10px] border border-line bg-white px-4 text-base text-ink placeholder:text-muted focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
             placeholder="文章标题"
           />
         </div>
 
         <div>
           <div className="mb-1 flex items-center justify-between">
-            <label className="text-sm font-medium text-gray-700">Slug</label>
+            <label className="text-sm font-medium text-ink">Slug</label>
             <button
               type="button"
               onClick={() => setAutoSlug(!formState.autoSlug)}
-              className="text-xs text-gray-500 hover:text-gray-700"
+              className="text-xs text-muted hover:text-primary"
             >
               {formState.autoSlug ? '自动生成' : '手动编辑'}
             </button>
@@ -173,39 +177,39 @@ export default function EditorPage() {
             value={formState.postSlug}
             onChange={(e) => setPostSlug(e.target.value)}
             disabled={formState.autoSlug}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm disabled:bg-gray-50 focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+            className="min-h-11 w-full rounded-[10px] border border-line bg-white px-4 text-sm text-ink disabled:bg-soft focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
             placeholder="url-slug"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">摘要</label>
+          <label className="mb-2 block text-sm font-medium text-ink">摘要</label>
           <textarea
             value={formState.summary}
             onChange={(e) => setSummary(e.target.value)}
             rows={2}
-            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
+            className="w-full rounded-[10px] border border-line bg-white px-4 py-3 text-sm leading-6 text-ink placeholder:text-muted focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
             placeholder="可选的文章摘要"
           />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">标签</label>
+          <label className="mb-2 block text-sm font-medium text-ink">标签</label>
           <TagSelector selectedTags={formState.tagNames} onChange={setTagNames} />
         </div>
 
         <div>
-          <label className="mb-1 block text-sm font-medium text-gray-700">内容</label>
-          <div className="min-h-[300px] rounded-md border border-gray-300">
+          <label className="mb-2 block text-sm font-medium text-ink">内容</label>
+          <div className="min-h-[380px] overflow-hidden rounded-[10px] border border-line bg-white focus-within:border-primary">
             <MilkdownEditor initialContent={formState.content} onChange={setContent} />
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-line pt-6">
           <select
             value={formState.status}
             onChange={(e) => setStatus(e.target.value as PostStatus)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            className="min-h-11 rounded-[10px] border border-line bg-white px-4 text-sm text-ink focus:border-primary focus:outline-none"
           >
             <option value="draft">草稿</option>
             <option value="published">发布</option>
@@ -214,7 +218,7 @@ export default function EditorPage() {
           <button
             type="submit"
             disabled={loading || !formState.title.trim() || !formState.content.trim()}
-            className="rounded-md bg-primary px-6 py-2 text-sm text-white hover:bg-primary-dark disabled:opacity-50"
+            className="min-h-11 rounded-[10px] bg-primary px-7 text-sm font-medium text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
           >
             {loading ? '保存中...' : isEdit ? '更新' : '创建'}
           </button>

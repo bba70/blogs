@@ -3,11 +3,11 @@ import { Link } from 'react-router'
 export default function TagBadge({ name, active }: { name: string; active?: boolean }) {
   return (
     <Link
-      to={`/?tag=${encodeURIComponent(name)}`}
-      className={`inline-block rounded-full px-3 py-0.5 text-xs font-medium transition-colors ${
+      to={`/?tag=${encodeURIComponent(name)}#articles`}
+      className={`inline-flex min-h-7 items-center rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${
         active
-          ? 'bg-primary text-white'
-          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          ? 'border-primary bg-primary text-white'
+          : 'border-line bg-white text-muted hover:border-[#c9c9c7] hover:text-ink'
       }`}
     >
       {name}

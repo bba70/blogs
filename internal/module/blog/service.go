@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/jackc/pgx/v5"
 )
 
 var (
@@ -26,6 +28,16 @@ func (s *Service) ListPosts(ctx context.Context, req ListPostsReq) ([]Post, int6
 	if req.PerPage < 1 || req.PerPage > 100 {
 		req.PerPage = 10
 	}
+
+	// 默认只返回已发布文章，避免草稿泄露；"all" 表示不过滤（供管理端使用）。
+	// 注意：Phase 2 加认证后，"all" 必须只允许管理员访问。
+	switch req.Status {
+	case "":
+		req.Status = StatusPublished
+	case StatusAll:
+		req.Status = ""
+	}
+
 	return s.repo.ListPosts(ctx, req)
 }
 
@@ -41,8 +53,12 @@ func (s *Service) GetPost(ctx context.Context, slug string) (*Post, error) {
 }
 
 func (s *Service) CreatePost(ctx context.Context, req CreatePostReq) (*Post, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
 	if req.Status == "" {
-		req.Status = "draft"
+		req.Status = StatusDraft
 	}
 
 	p := &Post{
@@ -54,7 +70,7 @@ func (s *Service) CreatePost(ctx context.Context, req CreatePostReq) (*Post, err
 		Tags:    req.Tags,
 	}
 
-	if req.Status == "published" {
+	if req.Status == StatusPublished {
 		now := time.Now()
 		p.PublishedAt = &now
 	}
@@ -76,6 +92,10 @@ func (s *Service) CreatePost(ctx context.Context, req CreatePostReq) (*Post, err
 }
 
 func (s *Service) UpdatePost(ctx context.Context, slug string, req UpdatePostReq) (*Post, error) {
+	if err := req.Validate(); err != nil {
+		return nil, err
+	}
+
 	p, err := s.repo.UpdatePost(ctx, slug, &req)
 	if err != nil {
 		return nil, err
@@ -88,13 +108,12 @@ func (s *Service) UpdatePost(ctx context.Context, slug string, req UpdatePostReq
 
 func (s *Service) DeletePost(ctx context.Context, slug string) error {
 	err := s.repo.DeletePost(ctx, slug)
-	if err != nil {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return ErrPostNotFound
 	}
-	return nil
+	return err
 }
 
 func (s *Service) ListTags(ctx context.Context) ([]Tag, error) {
 	return s.repo.ListTags(ctx)
 }
-

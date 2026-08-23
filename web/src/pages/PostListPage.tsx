@@ -61,12 +61,44 @@ export default function PostListPage() {
     setSearchParams({})
   }
 
-  if (loading && posts.length === 0) return <LoadingSpinner />
-  if (error) return <ErrorMessage message={error} onRetry={() => fetchPosts({ page, per_page: 10, tag: activeTag })} />
-
   return (
-    <div className="mx-auto max-w-[1440px] px-5 py-10 sm:px-8 sm:py-12">
-      <p className="mb-9 text-sm tracking-wide text-muted">一个关于代码、产品与创造力的个人空间</p>
+    <div>
+      <section id="home" className="home-hero scroll-mt-20" aria-labelledby="home-title">
+        <div className="home-hero__glow" aria-hidden="true" />
+        <div className="relative z-10 mx-auto flex min-h-[calc(100svh-72px)] max-w-[1000px] flex-col items-center justify-center px-5 py-20 text-center sm:px-8">
+          <p className="mb-5 text-sm font-medium tracking-[0.2em] text-primary sm:text-base">你好，欢迎来到昼白。</p>
+          <h1 id="home-title" className="max-w-[900px] text-[clamp(3.2rem,8.5vw,7rem)] font-semibold leading-[0.98] tracking-[-0.07em] text-[#111014]">
+            你好，<br className="sm:hidden" />我是陈默。
+          </h1>
+          <p className="mt-7 max-w-2xl text-base leading-8 text-[#65636b] sm:mt-9 sm:text-xl sm:leading-9">
+            一名独立开发者与写作者，在这里记录代码、产品与生活。
+          </p>
+
+          <div className="mt-9 flex min-h-7 max-w-full items-center gap-2 text-sm text-[#77747e] sm:mt-10">
+            <span className="shrink-0 text-primary" aria-hidden="true">✦</span>
+            {featuredPost ? (
+              <Link to={`/posts/${featuredPost.slug}`} className="truncate underline-offset-4 transition-colors hover:text-primary hover:underline">
+                最新文章：{featuredPost.title}
+              </Link>
+            ) : (
+              <span>{loading ? '正在整理最新的记录…' : '思考不止，记录不断。'}</span>
+            )}
+          </div>
+
+          <div className="mt-9 flex items-center gap-3" aria-label="联系方式">
+            <span className="social-button" title="GitHub 链接待配置">
+              <svg className="h-5 w-5" aria-hidden="true"><use href="/icons.svg#github-icon" /></svg>
+            </span>
+            <span className="social-button text-[15px] font-semibold" title="邮箱待配置" aria-label="邮箱待配置">@</span>
+            <span className="social-button text-lg" title="RSS 待配置" aria-label="RSS 待配置">◔</span>
+          </div>
+
+          <a href="#articles" className="hero-scroll" aria-label="向下查看文章"><span aria-hidden="true">↓</span></a>
+        </div>
+      </section>
+
+      <div className="mx-auto max-w-[1440px] px-5 py-14 sm:px-8 sm:py-20">
+      <p className="mb-9 text-sm tracking-wide text-muted">继续阅读，看看最近在思考什么</p>
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start xl:gap-12">
         <div className="min-w-0">
@@ -75,7 +107,11 @@ export default function PostListPage() {
               {activeTag || query ? '筛选结果' : '本周精选'}
             </h1>
 
-            {featuredPost ? (
+            {loading && posts.length === 0 ? (
+              <LoadingSpinner />
+            ) : error ? (
+              <ErrorMessage message={error} onRetry={() => fetchPosts({ page, per_page: 10, tag: activeTag })} />
+            ) : featuredPost ? (
               <article className="grid overflow-hidden rounded-[14px] border border-line bg-white md:grid-cols-[1.1fr_0.95fr]">
                 <div className="feature-art" aria-hidden="true">
                   <span className="absolute top-[14%] left-[7%] z-10 text-xs font-medium text-primary">写作</span>
@@ -167,6 +203,7 @@ export default function PostListPage() {
         </div>
 
         <ProfileSidebar articleCount={pagination?.total ?? posts.length} posts={posts} tags={tags} />
+      </div>
       </div>
     </div>
   )

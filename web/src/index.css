@@ -54,6 +54,87 @@ a {
   background: #e8eafd;
 }
 
+.brand-avatar {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  color: #ffffff;
+  font-family: "Songti SC", "STSong", "SimSun", serif;
+  font-size: 17px;
+  font-weight: 700;
+  background:
+    radial-gradient(circle at 68% 30%, rgba(255, 255, 255, 0.45) 0 7%, transparent 8%),
+    linear-gradient(145deg, #201d2b 0%, #6c58b5 58%, #b7a7e9 100%);
+  border-radius: 50%;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+}
+
+.home-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 65% 55% at 66% 16%, rgba(221, 209, 247, 0.54), transparent 72%),
+    radial-gradient(ellipse 48% 42% at 39% 70%, rgba(246, 239, 255, 0.72), transparent 76%),
+    linear-gradient(180deg, #fbfafe 0%, #ffffff 82%);
+}
+
+.home-hero__glow {
+  position: absolute;
+  top: -24%;
+  left: 42%;
+  width: 58vw;
+  min-width: 680px;
+  aspect-ratio: 1.2;
+  background: rgba(209, 193, 238, 0.26);
+  border-radius: 50%;
+  filter: blur(95px);
+  transform: translateX(-14%);
+}
+
+.social-button {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  color: #7451b6;
+  background: rgba(255, 255, 255, 0.58);
+  border: 1px solid rgba(116, 81, 182, 0.16);
+  border-radius: 50%;
+  transition: transform 180ms ease, color 180ms ease, background-color 180ms ease;
+}
+
+.social-button:hover {
+  color: #4f318a;
+  background: #ffffff;
+  transform: translateY(-2px);
+}
+
+.social-button svg path {
+  fill: currentColor;
+}
+
+.hero-scroll {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  color: #89858f;
+  border: 1px solid rgba(23, 23, 23, 0.1);
+  border-radius: 50%;
+  transform: translateX(-50%);
+  transition: color 180ms ease, border-color 180ms ease, transform 180ms ease;
+}
+
+.hero-scroll:hover {
+  color: #5868b2;
+  border-color: rgba(88, 104, 178, 0.35);
+  transform: translate(-50%, 3px);
+}
+
 .site-mark {
   position: relative;
   display: inline-block;
@@ -261,6 +342,13 @@ a {
 }
 
 @media (max-width: 720px) {
+  .home-hero__glow {
+    top: -8%;
+    left: 12%;
+    min-width: 540px;
+    filter: blur(75px);
+  }
+
   .feature-art {
     min-height: 230px;
   }

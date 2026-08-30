@@ -30,7 +30,7 @@ func (s *Service) ListPosts(ctx context.Context, req ListPostsReq) ([]Post, int6
 	}
 
 	// 默认只返回已发布文章，避免草稿泄露；"all" 表示不过滤（供管理端使用）。
-	// 注意：Phase 2 加认证后，"all" 必须只允许管理员访问。
+	// 注意：Phase 3 加认证后，"all" 必须只允许管理员访问。
 	switch req.Status {
 	case "":
 		req.Status = StatusPublished

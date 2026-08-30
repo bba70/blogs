@@ -4,10 +4,12 @@ Go + React 个人博客系统，作为长期试验田项目。
 
 ## Documentation
 
-项目文档位于 [`docs/`](docs/)，按 phase 和改动单元组织。每次改动只保留两份定义：
+项目文档位于 [`docs/`](docs/)，按 phase 和改动单元组织。产品功能改动保留两份定义：
 
 - `product.md` — 本次功能及其产品形态
 - `design.md` — 前端、后端与数据层的实现设计
+
+纯工程、基础设施或配置改动可以只保留 `design.md`，无需创建产品定义。
 
 全局视觉规范单独维护在 [`docs/ui/`](docs/ui/)，目录约定和现有文档索引见 [`docs/README.md`](docs/README.md)。
 
@@ -43,9 +45,9 @@ blogs/
 │   │   └── migrations/
 │   ├── module/                 # 业务模块（每个模块自包含）
 │   │   ├── blog/               # 博客核心
-│   │   ├── auth/               # 认证（Phase 2）
-│   │   ├── media/              # 图床/文件（Phase 2）
-│   │   └── comment/            # 评论（Phase 2）
+│   │   ├── auth/               # 认证（Phase 3）
+│   │   ├── media/              # 图床/文件（Phase 4）
+│   │   └── comment/            # 评论（Phase 3）
 │   ├── middleware/              # 全局中间件
 │   └── pkg/                    # 内部共享工具
 │
@@ -93,14 +95,14 @@ module/blog/
 | DELETE | /api/v1/posts/:slug | 删除文章 |
 | GET | /api/v1/tags | 标签列表 |
 
-### 认证（Phase 2）
+### 认证（Phase 3）
 
 | Method | Path | Description |
 |--------|------|-------------|
 | POST | /api/v1/auth/login | 登录 |
 | POST | /api/v1/auth/refresh | 刷新 Token |
 
-### 媒体（Phase 2）
+### 媒体（Phase 4）
 
 | Method | Path | Description |
 |--------|------|-------------|
@@ -155,20 +157,28 @@ CREATE TABLE post_tags (
 - [x] 前端初始化（Vite + React + TypeScript、路由、API 层）
 - [x] 前端页面（文章列表、文章详情、Markdown 编辑器、标签管理）
 
-### Phase 2: 用户系统 + 评论（未开始）
+### Phase 2: 容器化与运行配置（已完成）
+
+- [x] Go 后端多阶段镜像
+- [x] React 构建与 Nginx 静态服务镜像
+- [x] PostgreSQL、API、Web 完整 Compose 编排
+- [x] 健康检查、启动依赖和环境变量示例
+- [x] Linux、macOS、Windows 一键启动脚本
+
+### Phase 3: 用户系统 + 评论（未开始）
 
 - [ ] 用户注册/登录（JWT）
 - [ ] 角色权限（admin / user）
 - [ ] 评论系统（支持回复）
 - [ ] 后台管理面板
 
-### Phase 3: 图床 + 媒体（未开始）
+### Phase 4: 图床 + 媒体（未开始）
 
 - [ ] 图片上传（本地 / OSS）
 - [ ] 图片压缩、缩略图
 - [ ] 媒体库管理
 
-### Phase 4: 试验田功能（未开始）
+### Phase 5: 试验田功能（未开始）
 
 - [ ] 音视频处理
 - [ ] AI 助手集成

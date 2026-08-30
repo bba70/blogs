@@ -5,7 +5,7 @@ echo === Blogs Dev Server ===
 echo.
 
 REM Start Docker PostgreSQL if available (optional)
-docker compose up -d 2>nul
+docker compose up -d db 2>nul
 if %errorlevel% equ 0 (
     echo [OK] Docker PostgreSQL started.
 ) else (

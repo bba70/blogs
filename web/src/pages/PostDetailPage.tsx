@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useParams, Link } from 'react-router'
-import { usePostStore } from '@/stores'
+import { useAuthStore, usePostStore } from '@/stores'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ErrorMessage from '@/components/ErrorMessage'
 import StatusBadge from '@/components/StatusBadge'
@@ -14,6 +14,7 @@ function readingMinutes(content: string) {
 export default function PostDetailPage() {
   const { slug } = useParams<{ slug: string }>()
   const { currentPost, loading, error, fetchPost } = usePostStore()
+  const authenticated = useAuthStore((state) => state.authenticated)
 
   useEffect(() => {
     if (slug) fetchPost(slug)
@@ -53,9 +54,11 @@ export default function PostDetailPage() {
 
           <div className="flex items-center justify-between border-t border-line pt-7">
             <p className="text-sm text-muted">最后更新于 {new Date(currentPost.updated_at).toLocaleDateString('zh-CN')}</p>
-            <Link to={`/editor/${currentPost.slug}`} className="rounded-[10px] border border-line px-4 py-2 text-sm text-ink hover:border-primary hover:text-primary">
-              编辑文章
-            </Link>
+            {authenticated && (
+              <Link to={`/editor/${currentPost.slug}`} className="rounded-[10px] border border-line px-4 py-2 text-sm text-ink hover:border-primary hover:text-primary">
+                编辑文章
+              </Link>
+            )}
           </div>
         </div>
 

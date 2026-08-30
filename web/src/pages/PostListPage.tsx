@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router'
-import { usePostStore, useTagStore } from '@/stores'
+import { useAuthStore, usePostStore, useTagStore } from '@/stores'
 import PostCard from '@/components/PostCard'
 import ProfileSidebar from '@/components/ProfileSidebar'
 import Pagination from '@/components/Pagination'
@@ -29,6 +29,7 @@ export default function PostListPage() {
 
   const { posts, pagination, loading, error, fetchPosts } = usePostStore()
   const { tags, fetchTags } = useTagStore()
+  const authenticated = useAuthStore((state) => state.authenticated)
 
   useEffect(() => {
     fetchTags()
@@ -151,9 +152,11 @@ export default function PostListPage() {
               <div className="rounded-[14px] border border-dashed border-line px-6 py-20 text-center">
                 <p className="text-lg font-medium">{query ? '没有找到匹配的文章' : '这里还没有文章'}</p>
                 <p className="mt-2 text-sm text-muted">{query ? '尝试其他关键词，或清除筛选条件。' : '从一篇值得记录的内容开始。'}</p>
-                <Link to={query ? '/' : '/editor'} className="mt-5 inline-flex rounded-[10px] bg-primary px-4 py-2 text-sm text-white hover:bg-primary-dark">
-                  {query ? '清除搜索' : '新建文章'}
-                </Link>
+                {(query || authenticated) && (
+                  <Link to={query ? '/' : '/editor'} className="mt-5 inline-flex rounded-[10px] bg-primary px-4 py-2 text-sm text-white hover:bg-primary-dark">
+                    {query ? '清除搜索' : '新建文章'}
+                  </Link>
+                )}
               </div>
             )}
           </section>

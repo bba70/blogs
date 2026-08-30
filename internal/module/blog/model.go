@@ -13,6 +13,12 @@ const (
 	StatusPublished = "published"
 )
 
+// Viewer 描述当前请求者的访问能力，与 HTTP 细节解耦。
+// 由 handler 从认证上下文中映射后传入 service。
+type Viewer struct {
+	IsOwner bool
+}
+
 // StatusAll 仅用于列表接口的 status 参数，表示不过滤状态（供管理端使用）。
 const StatusAll = "all"
 

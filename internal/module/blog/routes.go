@@ -1,23 +1,24 @@
 package blog
 
-import "github.com/go-chi/chi/v5"
+import (
+	"net/http"
 
-func (h *Handler) Routes() chi.Router {
-	r := chi.NewRouter()
+	"github.com/go-chi/chi/v5"
+)
 
-	r.Get("/", h.ListPosts)
-	r.Post("/", h.CreatePost)
+// RegisterRoutes 挂载文章与标签路由。
+// 公开读接口允许可选身份（由 Identity 中间件解析），
+// 写接口通过 ownerOnly 强制作者身份。
+func RegisterRoutes(r chi.Router, h *Handler, ownerOnly func(http.Handler) http.Handler) {
+	r.Route("/posts", func(r chi.Router) {
+		r.Get("/", h.ListPosts)
+		r.With(ownerOnly).Post("/", h.CreatePost)
 
-	r.Route("/{slug}", func(r chi.Router) {
-		r.Get("/", h.GetPost)
-		r.Put("/", h.UpdatePost)
-		r.Delete("/", h.DeletePost)
+		r.Route("/{slug}", func(r chi.Router) {
+			r.Get("/", h.GetPost)
+			r.With(ownerOnly).Put("/", h.UpdatePost)
+			r.With(ownerOnly).Delete("/", h.DeletePost)
+		})
 	})
-
-	return r
-}
-
-func RegisterRoutes(r chi.Router, h *Handler) {
-	r.Mount("/posts", h.Routes())
 	r.Get("/tags", h.ListTags)
 }

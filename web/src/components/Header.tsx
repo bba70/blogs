@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
+import { useAuthStore } from '@/stores'
 
 const navItems = [
   { label: '首页', hash: '#home' },
@@ -15,11 +16,17 @@ export default function Header() {
   const [searchParams] = useSearchParams()
   const [searchOpen, setSearchOpen] = useState(Boolean(searchParams.get('q')))
   const [query, setQuery] = useState(searchParams.get('q') ?? '')
+  const { authenticated, logout } = useAuthStore()
 
   function handleSearch(event: FormEvent) {
     event.preventDefault()
     const value = query.trim()
     navigate(value ? `/?q=${encodeURIComponent(value)}#articles` : '/#articles')
+  }
+
+  async function handleLogout() {
+    await logout()
+    navigate('/')
   }
 
   return (
@@ -48,6 +55,16 @@ export default function Header() {
         </nav>
 
         <div className="ml-auto flex items-center gap-2">
+          {authenticated && (
+            <div className="hidden items-center gap-1 sm:flex" aria-label="作者操作">
+              <Link to="/editor" className="rounded-lg px-3 py-2 text-sm text-primary hover:bg-black/[0.035]">
+                写作
+              </Link>
+              <button type="button" onClick={() => void handleLogout()} className="rounded-lg px-3 py-2 text-sm text-muted hover:bg-black/[0.035] hover:text-ink">
+                退出
+              </button>
+            </div>
+          )}
           <span
             className="hidden h-10 w-10 items-center justify-center rounded-full text-ink transition-colors hover:bg-black/[0.04] sm:flex"
             title="GitHub 链接待配置"
@@ -87,6 +104,16 @@ export default function Header() {
             {item.label}
           </Link>
         ))}
+        {authenticated && (
+          <>
+            <Link to="/editor" className="min-w-20 px-4 py-3 text-center text-sm text-primary">
+              写作
+            </Link>
+            <button type="button" onClick={() => void handleLogout()} className="min-w-20 px-4 py-3 text-center text-sm text-muted hover:text-ink">
+              退出
+            </button>
+          </>
+        )}
       </nav>
     </header>
   )

@@ -5,6 +5,17 @@ import (
 	"net/http"
 )
 
+// 业务错误码。0 表示成功。
+const (
+	CodeInternal     = 1
+	CodeNotFound     = 2
+	CodeValidation   = 3
+	CodeConflict     = 4
+	CodeUnauthorized = 5
+	CodeForbidden    = 6
+	CodeRateLimited  = 7
+)
+
 type APIResponse struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`

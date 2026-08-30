@@ -20,6 +20,18 @@ if [ ! -f .env ]; then
     echo "Created .env from .env.example."
 fi
 
+if grep -q '^AUTH_PASSWORD_HASH=$' .env; then
+    echo "Error: Configure AUTH_PASSWORD_HASH in .env before starting." >&2
+    echo "Generate it with: go run ./cmd/hashpass" >&2
+    exit 1
+fi
+
+if grep -q '^AUTH_JWT_SECRET=$' .env; then
+    echo "Error: Configure AUTH_JWT_SECRET in .env before starting." >&2
+    echo "Generate one with: openssl rand -hex 32" >&2
+    exit 1
+fi
+
 echo "Building and starting database, API, and web services..."
 docker compose up -d --build
 

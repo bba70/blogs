@@ -1,6 +1,15 @@
 import { create } from 'zustand'
 import type { Post, PostListParams, CreatePostPayload, UpdatePostPayload, PaginationMeta } from '@/types'
 import * as api from '@/api'
+import { useAuthStore } from './authStore'
+
+function requestError(error: unknown) {
+  if (api.isApiError(error) && error.status === 401) {
+    useAuthStore.getState().expireSession()
+    return '登录已过期，请重新登录。'
+  }
+  return (error as Error).message
+}
 
 interface PostState {
   posts: Post[]
@@ -28,7 +37,7 @@ export const usePostStore = create<PostState>()((set) => ({
       const res = await api.fetchPosts(params)
       set({ posts: res.data, pagination: res.meta, loading: false })
     } catch (e) {
-      set({ error: (e as Error).message, loading: false })
+      set({ error: requestError(e), loading: false })
     }
   },
 
@@ -38,7 +47,7 @@ export const usePostStore = create<PostState>()((set) => ({
       const res = await api.fetchPost(slug)
       set({ currentPost: res.data, loading: false })
     } catch (e) {
-      set({ error: (e as Error).message, loading: false })
+      set({ error: requestError(e), loading: false })
     }
   },
 
@@ -49,7 +58,7 @@ export const usePostStore = create<PostState>()((set) => ({
       set({ loading: false })
       return res.data.slug
     } catch (e) {
-      set({ error: (e as Error).message, loading: false })
+      set({ error: requestError(e), loading: false })
       return null
     }
   },
@@ -61,7 +70,7 @@ export const usePostStore = create<PostState>()((set) => ({
       set({ loading: false })
       return true
     } catch (e) {
-      set({ error: (e as Error).message, loading: false })
+      set({ error: requestError(e), loading: false })
       return false
     }
   },
@@ -73,7 +82,7 @@ export const usePostStore = create<PostState>()((set) => ({
       set((s) => ({ posts: s.posts.filter((p) => p.slug !== slug), loading: false }))
       return true
     } catch (e) {
-      set({ error: (e as Error).message, loading: false })
+      set({ error: requestError(e), loading: false })
       return false
     }
   },

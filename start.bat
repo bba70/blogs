@@ -19,6 +19,20 @@ if not exist ".env" (
     echo Created .env from .env.example.
 )
 
+findstr /B /C:"AUTH_PASSWORD_HASH=" ".env" | findstr /X /C:"AUTH_PASSWORD_HASH=" >nul
+if not errorlevel 1 (
+    echo Error: Configure AUTH_PASSWORD_HASH in .env before starting.
+    echo Generate it with: go run ./cmd/hashpass
+    exit /b 1
+)
+
+findstr /B /C:"AUTH_JWT_SECRET=" ".env" | findstr /X /C:"AUTH_JWT_SECRET=" >nul
+if not errorlevel 1 (
+    echo Error: Configure AUTH_JWT_SECRET in .env before starting.
+    echo Generate a random secret of at least 32 bytes.
+    exit /b 1
+)
+
 echo Building and starting database, API, and web services...
 docker compose up -d --build
 if errorlevel 1 (

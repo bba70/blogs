@@ -6,6 +6,7 @@ export interface Post {
   slug: string
   content: string
   summary: string
+  cover_url: string
   status: PostStatus
   created_at: string
   updated_at: string
@@ -25,6 +26,7 @@ export interface CreatePostPayload {
   slug: string
   content: string
   summary?: string
+  cover_url?: string
   status?: PostStatus
   tags?: string[]
 }
@@ -34,6 +36,7 @@ export interface UpdatePostPayload {
   slug?: string
   content?: string
   summary?: string
+  cover_url?: string
   status?: PostStatus
   tags?: string[]
 }

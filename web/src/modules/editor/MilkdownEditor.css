@@ -17,24 +17,36 @@
 }
 
 .blog-editor .milkdown {
-  min-height: 520px;
+  min-height: 610px;
 }
 
 .blog-editor .milkdown-top-bar {
+  position: sticky;
+  top: calc(var(--header-height) + 62px);
+  z-index: 8;
   gap: 2px;
-  min-height: 58px;
-  padding: 6px 16px;
+  min-height: 48px;
+  padding: 2px 18px;
   border-bottom-color: #e3e5e9;
+  background: rgb(255 255 255 / 97%);
+  backdrop-filter: blur(12px);
 }
 
 .blog-editor .milkdown-top-bar .top-bar-inner {
+  flex-wrap: nowrap;
+  overflow-x: auto;
   row-gap: 2px;
+  scrollbar-width: none;
+}
+
+.blog-editor .milkdown-top-bar .top-bar-inner::-webkit-scrollbar {
+  display: none;
 }
 
 .blog-editor .milkdown-top-bar .top-bar-item {
-  width: 38px;
-  height: 38px;
-  margin: 3px;
+  width: 34px;
+  height: 34px;
+  margin: 1px;
   border-radius: 7px;
 }
 
@@ -43,20 +55,26 @@
 }
 
 .blog-editor .milkdown-top-bar .top-bar-heading-button {
-  height: 38px;
+  height: 34px;
   border-radius: 7px;
 }
 
+.blog-editor .milkdown-top-bar .top-bar-item svg,
+.blog-editor .milkdown-top-bar .top-bar-heading-button svg {
+  width: 20px;
+  height: 20px;
+}
+
 .blog-editor .milkdown-top-bar .top-bar-divider {
-  height: 28px;
-  margin: 8px 7px;
+  height: 20px;
+  margin: 6px 4px;
 }
 
 .blog-editor .milkdown .ProseMirror {
-  min-height: 460px;
-  padding: 32px 40px 56px;
+  min-height: 550px;
+  padding: 42px clamp(34px, 7vw, 86px) 78px;
   font-size: 16px;
-  line-height: 1.8;
+  line-height: 1.9;
 }
 
 .blog-editor .milkdown .ProseMirror > :first-child {
@@ -65,12 +83,21 @@
 
 @media (max-width: 720px) {
   .blog-editor .milkdown {
-    min-height: 460px;
+    min-height: 520px;
   }
 
   .blog-editor .milkdown-top-bar {
     position: relative;
-    padding: 5px 8px;
+    padding: 2px 8px;
+  }
+
+  .blog-editor .milkdown-top-bar .top-bar-item {
+    width: 40px;
+    height: 40px;
+  }
+
+  .blog-editor .milkdown-top-bar .top-bar-heading-button {
+    height: 40px;
   }
 
   .blog-editor .milkdown-top-bar .top-bar-divider {
@@ -78,7 +105,7 @@
   }
 
   .blog-editor .milkdown .ProseMirror {
-    min-height: 400px;
-    padding: 24px 20px 40px;
+    min-height: 460px;
+    padding: 32px 22px 60px;
   }
 }

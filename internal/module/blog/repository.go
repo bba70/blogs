@@ -58,7 +58,7 @@ func (r *Repository) ListPosts(ctx context.Context, req ListPostsReq) ([]Post, i
 	}
 
 	offset := (req.Page - 1) * req.PerPage
-	querySQL := fmt.Sprintf(`SELECT p.id, p.title, p.slug, p.content, p.summary, p.status,
+	querySQL := fmt.Sprintf(`SELECT p.id, p.title, p.slug, p.content, p.summary, p.cover_url, p.status,
 		p.created_at, p.updated_at, p.published_at,
 		COALESCE(array_agg(t.name) FILTER (WHERE t.name IS NOT NULL), '{}') AS tags
 		FROM posts p
@@ -80,7 +80,7 @@ func (r *Repository) ListPosts(ctx context.Context, req ListPostsReq) ([]Post, i
 	var posts []Post
 	for rows.Next() {
 		var p Post
-		if err := rows.Scan(&p.ID, &p.Title, &p.Slug, &p.Content, &p.Summary,
+		if err := rows.Scan(&p.ID, &p.Title, &p.Slug, &p.Content, &p.Summary, &p.CoverURL,
 			&p.Status, &p.CreatedAt, &p.UpdatedAt, &p.PublishedAt, &p.Tags,
 		); err != nil {
 			return nil, 0, err
@@ -91,16 +91,27 @@ func (r *Repository) ListPosts(ctx context.Context, req ListPostsReq) ([]Post, i
 }
 
 func (r *Repository) GetPostBySlug(ctx context.Context, slug string) (*Post, error) {
+	return r.getPostBySlug(ctx, `WHERE p.slug = $1`, slug)
+}
+
+// GetPublishedPostBySlug 按 slug 读取文章，且 SQL 层限定只返回已发布文章。
+// 匿名详情读取必须走该查询，避免先读出草稿再在上层泄露。
+func (r *Repository) GetPublishedPostBySlug(ctx context.Context, slug string) (*Post, error) {
+	return r.getPostBySlug(ctx, `WHERE p.slug = $1 AND p.status = $2`, slug, StatusPublished)
+}
+
+func (r *Repository) getPostBySlug(ctx context.Context, whereClause string, args ...any) (*Post, error) {
 	var p Post
-	err := r.db.QueryRow(ctx, `SELECT p.id, p.title, p.slug, p.content, p.summary, p.status,
+	query := `SELECT p.id, p.title, p.slug, p.content, p.summary, p.cover_url, p.status,
 		p.created_at, p.updated_at, p.published_at,
 		COALESCE(array_agg(t.name) FILTER (WHERE t.name IS NOT NULL), '{}') AS tags
 		FROM posts p
 		LEFT JOIN post_tags pt ON pt.post_id = p.id
 		LEFT JOIN tags t ON t.id = pt.tag_id
-		WHERE p.slug = $1
-		GROUP BY p.id`, slug,
-	).Scan(&p.ID, &p.Title, &p.Slug, &p.Content, &p.Summary,
+		` + whereClause + `
+		GROUP BY p.id`
+
+	err := r.db.QueryRow(ctx, query, args...).Scan(&p.ID, &p.Title, &p.Slug, &p.Content, &p.Summary, &p.CoverURL,
 		&p.Status, &p.CreatedAt, &p.UpdatedAt, &p.PublishedAt, &p.Tags,
 	)
 	if err == pgx.ErrNoRows {
@@ -114,10 +125,10 @@ func (r *Repository) GetPostBySlug(ctx context.Context, slug string) (*Post, err
 
 func (r *Repository) CreatePost(ctx context.Context, p *Post) error {
 	err := r.db.QueryRow(ctx,
-		`INSERT INTO posts (title, slug, content, summary, status, published_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		`INSERT INTO posts (title, slug, content, summary, status, published_at, cover_url)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, created_at, updated_at`,
-		p.Title, p.Slug, p.Content, p.Summary, p.Status, p.PublishedAt,
+		p.Title, p.Slug, p.Content, p.Summary, p.Status, p.PublishedAt, p.CoverURL,
 	).Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
 	if isUniqueViolation(err) {
 		return ErrSlugExists
@@ -147,6 +158,9 @@ func (r *Repository) UpdatePost(ctx context.Context, slug string, p *UpdatePostR
 	}
 	if p.Summary != nil {
 		addSet("summary", *p.Summary)
+	}
+	if p.CoverURL != nil {
+		addSet("cover_url", *p.CoverURL)
 	}
 	if p.Status != nil {
 		addSet("status", *p.Status)
@@ -180,7 +194,7 @@ func (r *Repository) UpdatePost(ctx context.Context, slug string, p *UpdatePostR
 	}
 
 	if p.Tags != nil {
-		if err := r.syncPostTags(ctx, id, p.Tags); err != nil {
+		if err := r.SyncPostTags(ctx, id, p.Tags); err != nil {
 			return nil, err
 		}
 	}
@@ -207,7 +221,23 @@ func (r *Repository) DeletePost(ctx context.Context, slug string) error {
 // --------------- Tags ---------------
 
 func (r *Repository) ListTags(ctx context.Context) ([]Tag, error) {
-	rows, err := r.db.Query(ctx, `SELECT id, name FROM tags ORDER BY name`)
+	return r.queryTags(ctx, `SELECT id, name FROM tags ORDER BY name`)
+}
+
+// ListPublicTags 只返回至少被一篇已发布文章使用的标签，
+// 避免仅被草稿引用的标签泄露给游客。
+func (r *Repository) ListPublicTags(ctx context.Context) ([]Tag, error) {
+	return r.queryTags(ctx, `
+		SELECT DISTINCT t.id, t.name
+		FROM tags t
+		JOIN post_tags pt ON pt.tag_id = t.id
+		JOIN posts p ON p.id = pt.post_id
+		WHERE p.status = $1
+		ORDER BY t.name`, StatusPublished)
+}
+
+func (r *Repository) queryTags(ctx context.Context, query string, args ...any) ([]Tag, error) {
+	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -237,7 +267,7 @@ func (r *Repository) EnsureTags(ctx context.Context, names []string) error {
 	return nil
 }
 
-func (r *Repository) syncPostTags(ctx context.Context, postID int64, tagNames []string) error {
+func (r *Repository) SyncPostTags(ctx context.Context, postID int64, tagNames []string) error {
 	_, err := r.db.Exec(ctx, `DELETE FROM post_tags WHERE post_id = $1`, postID)
 	if err != nil {
 		return err

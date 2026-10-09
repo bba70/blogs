@@ -17,11 +17,18 @@ import (
 	"github.com/bba70/blogs/internal/config"
 	"github.com/bba70/blogs/internal/database"
 	"github.com/bba70/blogs/internal/middleware"
+	"github.com/bba70/blogs/internal/module/auth"
 	blogModule "github.com/bba70/blogs/internal/module/blog"
+	"github.com/bba70/blogs/internal/module/media"
 )
 
 func main() {
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		// 认证配置缺失或非法时拒绝启动，不以关闭认证或默认密码方式降级。
+		slog.Error("load config", "error", err)
+		os.Exit(1)
+	}
 
 	slog.Info("starting server", "port", cfg.Server.Port)
 
@@ -39,27 +46,50 @@ func main() {
 	}
 	defer pool.Close()
 
+	authSvc, err := auth.NewService(cfg.Auth.PasswordHash, cfg.Auth.JWTSecret)
+	if err != nil {
+		slog.Error("init auth service", "error", err)
+		os.Exit(1)
+	}
+
 	repo := blogModule.NewRepository(pool)
 	svc := blogModule.NewService(repo)
 	handler := blogModule.NewHandler(svc)
+	imageStorage, err := media.NewLocalStorage(cfg.UploadDir)
+	if err != nil {
+		slog.Error("init image storage", "error", err)
+		os.Exit(1)
+	}
+	mediaHandler := media.NewHandler(media.NewService(imageStorage), imageStorage)
+
+	authHandler := auth.NewHandler(authSvc, auth.NewLoginLimiter(), cfg.Auth.CookieSecure)
+	authMw := auth.NewMiddleware(authSvc)
 
 	r := chi.NewRouter()
-	// 注意：AllowCredentials 与通配符 origin 不兼容（浏览器会拒绝响应），
-	// 且 JWT 走 Authorization 头、不依赖 cookie，无需 credentials。
-	// Phase 3 接入认证后应把 AllowedOrigins 改为配置项，列出具体域名。
+	// 作者会话走 HttpOnly Cookie，跨域请求必须携带凭证：
+	// AllowedOrigins 使用配置中的明确来源列表，不允许通配符与凭证混用。
+	// 同源部署（Nginx/Vite 代理 /api）下浏览器仍会携带 Origin，
+	// 非安全方法的来源校验由 OriginGuard 统一执行。
 	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type"},
-		MaxAge:         300,
+		AllowedOrigins:   cfg.Auth.AllowedOrigins,
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           300,
 	}))
+	r.Use(middleware.OriginGuard(cfg.Auth.AllowedOrigins))
 	r.Use(chiMiddleware.RequestID)
-	r.Use(chiMiddleware.RealIP)
+	// RealIP 只信任来自受控代理网段的 X-Real-IP / X-Forwarded-For；
+	// 部署时不得让公网绕过代理直接访问 API 端口，否则按 IP 的限流会失真。
+	r.Use(middleware.RealIP())
 	r.Use(middleware.Logger)
 	r.Use(chiMiddleware.Recoverer)
 
 	r.Route("/api/v1", func(r chi.Router) {
-		blogModule.RegisterRoutes(r, handler)
+		r.Use(authMw.Identity)
+		r.Mount("/auth", authHandler.Routes())
+		blogModule.RegisterRoutes(r, handler, authMw.RequireOwner)
+		r.Mount("/media", mediaHandler.Routes(authMw.RequireOwner))
 	})
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {

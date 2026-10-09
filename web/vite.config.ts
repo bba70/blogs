@@ -8,6 +8,9 @@ export default defineConfig({
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
   },
+  optimizeDeps: {
+    include: ['@milkdown/react', '@milkdown/crepe'],
+  },
   server: {
     proxy: {
       '/api': 'http://localhost:8080',

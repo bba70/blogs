@@ -26,6 +26,20 @@ function MilkdownInner({ initialContent, onChange }: MilkdownEditorProps) {
         [Crepe.Feature.TopBar]: true,
         [Crepe.Feature.Toolbar]: false,
       },
+      featureConfigs: {
+        [Crepe.Feature.Placeholder]: {
+          text: '从这里开始写正文…',
+          mode: 'block',
+        },
+        [Crepe.Feature.TopBar]: {
+          headingOptions: [
+            { label: '正文', level: null },
+            { label: '标题 1', level: 1 },
+            { label: '标题 2', level: 2 },
+            { label: '标题 3', level: 3 },
+          ],
+        },
+      },
     })
     crepe.on((api) => {
       api.markdownUpdated((_ctx, markdown) => {

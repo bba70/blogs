@@ -9,11 +9,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/bba70/blogs/internal/module/auth"
 	"github.com/bba70/blogs/internal/pkg/response"
 )
 
 // maxBodySize 限制单个请求体大小（2MB），防止超大载荷。
-// 正文以 Markdown 为主足够用；图片等大文件走 Phase 4 的媒体上传。
+// 正文以 Markdown 为主；封面图片通过独立媒体上传接口传输。
 const maxBodySize = 2 << 20
 
 type Handler struct {
@@ -24,18 +25,27 @@ func NewHandler(svc *Service) *Handler {
 	return &Handler{svc: svc}
 }
 
+// viewerFrom 将认证上下文中的身份映射为 service 层的访问能力。
+func viewerFrom(r *http.Request) Viewer {
+	return Viewer{IsOwner: auth.IsOwner(r.Context())}
+}
+
 func (h *Handler) ListPosts(w http.ResponseWriter, r *http.Request) {
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
 	status := r.URL.Query().Get("status")
 	tag := r.URL.Query().Get("tag")
 
-	posts, total, err := h.svc.ListPosts(r.Context(), ListPostsReq{
+	posts, total, err := h.svc.ListPosts(r.Context(), viewerFrom(r), ListPostsReq{
 		Page:    page,
 		PerPage: perPage,
 		Status:  status,
 		Tag:     tag,
 	})
+	if errors.Is(err, ErrUnauthorized) {
+		response.Error(w, http.StatusUnauthorized, response.CodeUnauthorized, "authentication required")
+		return
+	}
 	if err != nil {
 		h.internalError(w, r, err)
 		return
@@ -54,9 +64,9 @@ func (h *Handler) ListPosts(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) GetPost(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 
-	post, err := h.svc.GetPost(r.Context(), slug)
+	post, err := h.svc.GetPost(r.Context(), viewerFrom(r), slug)
 	if errors.Is(err, ErrPostNotFound) {
-		response.Error(w, http.StatusNotFound, 2, "post not found")
+		response.Error(w, http.StatusNotFound, response.CodeNotFound, "post not found")
 		return
 	}
 	if err != nil {
@@ -70,11 +80,11 @@ func (h *Handler) GetPost(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) CreatePost(w http.ResponseWriter, r *http.Request) {
 	var req CreatePostReq
 	if err := decodeJSON(w, r, &req); err != nil {
-		response.Error(w, http.StatusBadRequest, 3, err.Error())
+		response.Error(w, http.StatusBadRequest, response.CodeValidation, err.Error())
 		return
 	}
 
-	post, err := h.svc.CreatePost(r.Context(), req)
+	post, err := h.svc.CreatePost(r.Context(), viewerFrom(r), req)
 	if err != nil {
 		h.writeServiceError(w, r, err)
 		return
@@ -88,11 +98,11 @@ func (h *Handler) UpdatePost(w http.ResponseWriter, r *http.Request) {
 
 	var req UpdatePostReq
 	if err := decodeJSON(w, r, &req); err != nil {
-		response.Error(w, http.StatusBadRequest, 3, err.Error())
+		response.Error(w, http.StatusBadRequest, response.CodeValidation, err.Error())
 		return
 	}
 
-	post, err := h.svc.UpdatePost(r.Context(), slug, req)
+	post, err := h.svc.UpdatePost(r.Context(), viewerFrom(r), slug, req)
 	if err != nil {
 		h.writeServiceError(w, r, err)
 		return
@@ -104,7 +114,7 @@ func (h *Handler) UpdatePost(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) DeletePost(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 
-	if err := h.svc.DeletePost(r.Context(), slug); err != nil {
+	if err := h.svc.DeletePost(r.Context(), viewerFrom(r), slug); err != nil {
 		h.writeServiceError(w, r, err)
 		return
 	}
@@ -113,7 +123,7 @@ func (h *Handler) DeletePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ListTags(w http.ResponseWriter, r *http.Request) {
-	tags, err := h.svc.ListTags(r.Context())
+	tags, err := h.svc.ListTags(r.Context(), viewerFrom(r))
 	if err != nil {
 		h.internalError(w, r, err)
 		return
@@ -129,11 +139,13 @@ func (h *Handler) writeServiceError(w http.ResponseWriter, r *http.Request, err 
 	var ve *ValidationError
 	switch {
 	case errors.As(err, &ve):
-		response.Error(w, http.StatusBadRequest, 3, ve.Message)
+		response.Error(w, http.StatusBadRequest, response.CodeValidation, ve.Message)
+	case errors.Is(err, ErrUnauthorized):
+		response.Error(w, http.StatusUnauthorized, response.CodeUnauthorized, "authentication required")
 	case errors.Is(err, ErrPostNotFound):
-		response.Error(w, http.StatusNotFound, 2, "post not found")
+		response.Error(w, http.StatusNotFound, response.CodeNotFound, "post not found")
 	case errors.Is(err, ErrSlugExists):
-		response.Error(w, http.StatusConflict, 4, "slug already exists")
+		response.Error(w, http.StatusConflict, response.CodeConflict, "slug already exists")
 	default:
 		h.internalError(w, r, err)
 	}
@@ -146,10 +158,10 @@ func (h *Handler) internalError(w http.ResponseWriter, r *http.Request, err erro
 		"path", r.URL.Path,
 		"error", err,
 	)
-	response.Error(w, http.StatusInternalServerError, 1, "internal server error")
+	response.Error(w, http.StatusInternalServerError, response.CodeInternal, "internal server error")
 }
 
-func decodeJSON(w http.ResponseWriter, r *http.Request, v interface{}) error {
+func decodeJSON(w http.ResponseWriter, r *http.Request, v any) error {
 	defer r.Body.Close()
 	r.Body = http.MaxBytesReader(w, r.Body, maxBodySize)
 	return json.NewDecoder(r.Body).Decode(v)

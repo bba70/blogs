@@ -10,15 +10,16 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/server
 
 FROM alpine:3.22
-RUN apk add --no-cache ca-certificates wget \
+RUN apk add --no-cache ca-certificates wget su-exec \
     && addgroup -S blogs \
     && adduser -S -G blogs blogs
 
 WORKDIR /app
 COPY --from=builder /out/server ./server
 COPY internal/database/migrations ./internal/database/migrations
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
 
-USER blogs
 EXPOSE 8080
 
-ENTRYPOINT ["/app/server"]
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

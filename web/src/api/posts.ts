@@ -16,6 +16,21 @@ export async function fetchPosts(params?: PostListParams) {
   return requestPaginated<Post>(`/posts${buildQuery(params)}`)
 }
 
+export async function fetchArchivePosts(signal?: AbortSignal) {
+  const posts: Post[] = []
+  let page = 1
+  while (true) {
+    const result = await requestPaginated<Post>(
+      `/posts${buildQuery({ page, per_page: 100, status: 'published' })}`,
+      { signal },
+    )
+    posts.push(...result.data)
+    if (result.data.length === 0 || page * result.meta.per_page >= result.meta.total) break
+    page += 1
+  }
+  return [...new Map(posts.filter((post) => post.status === 'published').map((post) => [post.id, post])).values()]
+}
+
 export async function fetchPost(slug: string) {
   return request<Post>(`/posts/${encodeURIComponent(slug)}`)
 }

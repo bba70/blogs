@@ -26,14 +26,21 @@ services:
     restart: unless-stopped
     environment:
       SERVER_PORT: 8080
+      UPLOAD_DIR: /app/uploads
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: ${DB_USER:-blogs}
       DB_PASSWORD: ${DB_PASSWORD:-blogs}
       DB_NAME: ${DB_NAME:-blogs}
       DB_SSLMODE: disable
+      AUTH_PASSWORD_HASH: ${AUTH_PASSWORD_HASH:?AUTH_PASSWORD_HASH is required}
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?AUTH_JWT_SECRET is required}
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:?AUTH_COOKIE_SECURE is required}
+      AUTH_ALLOWED_ORIGINS: ${AUTH_ALLOWED_ORIGINS:?AUTH_ALLOWED_ORIGINS is required}
     ports:
-      - "${API_PORT:-8080}:8080"
+      - "127.0.0.1:${API_PORT:-8080}:8080"
+    volumes:
+      - ./uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy

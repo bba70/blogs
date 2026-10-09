@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { Link, useNavigate, useParams } from 'react-router'
 import { usePostStore } from '@/stores'
 import type { PostStatus } from '@/types'
+import MarkdownRenderer from './MarkdownRenderer'
 import MilkdownEditor from './MilkdownEditor'
 import TagSelector from './TagSelector'
+import CoverUploader from './CoverUploader'
+import './EditorPage.css'
 
 function generateSlug(title: string): string {
   return title
@@ -13,10 +16,15 @@ function generateSlug(title: string): string {
     .slice(0, 100)
 }
 
+function countCharacters(content: string) {
+  return content.replace(/\s/g, '').length
+}
+
 interface FormState {
   title: string
   postSlug: string
   summary: string
+  coverURL: string
   content: string
   status: PostStatus
   tagNames: string[]
@@ -27,6 +35,7 @@ const initialState: FormState = {
   title: '',
   postSlug: '',
   summary: '',
+  coverURL: '',
   content: '',
   status: 'draft',
   tagNames: [],
@@ -37,16 +46,20 @@ export default function EditorPage() {
   const { slug } = useParams()
   const navigate = useNavigate()
   const { currentPost, fetchPost, createPost, updatePost, loading, error } = usePostStore()
-
   const [formState, setFormState] = useState<FormState>(initialState)
   const [loadedSlug, setLoadedSlug] = useState<string | null>(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [coverUploading, setCoverUploading] = useState(false)
+  const titleRef = useRef<HTMLInputElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const settingsRef = useRef<HTMLDetailsElement>(null)
 
   const isEdit = Boolean(slug)
+  const characterCount = useMemo(() => countCharacters(formState.content), [formState.content])
+  const canSave = Boolean(formState.title.trim() && formState.content.trim() && !loading && !coverUploading)
 
   useEffect(() => {
-    if (slug) {
-      fetchPost(slug)
-    }
+    if (slug) fetchPost(slug)
   }, [slug, fetchPost])
 
   useEffect(() => {
@@ -57,6 +70,7 @@ export default function EditorPage() {
         title: currentPost.title,
         postSlug: currentPost.slug,
         summary: currentPost.summary,
+        coverURL: currentPost.cover_url ?? '',
         content: currentPost.content,
         status: currentPost.status,
         tagNames: currentPost.tags,
@@ -69,163 +83,244 @@ export default function EditorPage() {
     }
   }, [currentPost, loadedSlug, slug])
 
-  const setTitle = useCallback((newTitle: string) => {
-    setFormState((prev) => ({ ...prev, title: newTitle }))
+  const setTitle = useCallback((title: string) => {
+    setFormState((previous) => ({ ...previous, title }))
   }, [])
 
-  const setPostSlug = useCallback((newSlug: string) => {
-    setFormState((prev) => ({ ...prev, postSlug: newSlug }))
+  const setPostSlug = useCallback((postSlug: string) => {
+    setFormState((previous) => ({ ...previous, postSlug }))
   }, [])
 
-  const setSummary = useCallback((newSummary: string) => {
-    setFormState((prev) => ({ ...prev, summary: newSummary }))
+  const setSummary = useCallback((summary: string) => {
+    setFormState((previous) => ({ ...previous, summary }))
   }, [])
 
-  const setContent = useCallback((newContent: string) => {
-    setFormState((prev) => ({ ...prev, content: newContent }))
+  const setContent = useCallback((content: string) => {
+    setFormState((previous) => ({ ...previous, content }))
   }, [])
 
-  const setStatus = useCallback((newStatus: PostStatus) => {
-    setFormState((prev) => ({ ...prev, status: newStatus }))
+  const setTagNames = useCallback((tagNames: string[]) => {
+    setFormState((previous) => ({ ...previous, tagNames }))
   }, [])
 
-  const setTagNames = useCallback((newTagNames: string[]) => {
-    setFormState((prev) => ({ ...prev, tagNames: newTagNames }))
-  }, [])
+  function handleTitleChange(title: string) {
+    setTitle(title)
+    if (formState.autoSlug) setPostSlug(generateSlug(title))
+  }
 
-  const setAutoSlug = useCallback((value: boolean) => {
-    setFormState((prev) => ({ ...prev, autoSlug: value }))
-  }, [])
+  async function savePost(status: PostStatus) {
+    if (!canSave) return
 
-  const handleTitleChange = useCallback(
-    (newTitle: string) => {
-      setTitle(newTitle)
-      if (formState.autoSlug) {
-        setPostSlug(generateSlug(newTitle))
-      }
-    },
-    [formState.autoSlug, setTitle, setPostSlug],
-  )
+    const payload = {
+      title: formState.title.trim(),
+      slug: formState.postSlug,
+      summary: formState.summary.trim(),
+      cover_url: formState.coverURL,
+      content: formState.content,
+      status,
+      tags: formState.tagNames,
+    }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!formState.title.trim() || !formState.content.trim()) return
+    setFormState((previous) => ({ ...previous, status }))
 
     if (isEdit && slug) {
-      const ok = await updatePost(slug, {
-        title: formState.title,
-        slug: formState.postSlug,
-        summary: formState.summary,
-        content: formState.content,
-        status: formState.status,
-        tags: formState.tagNames,
-      })
-      if (ok) navigate(`/posts/${formState.postSlug}`)
-    } else {
-      const result = await createPost({
-        title: formState.title,
-        slug: formState.postSlug,
-        summary: formState.summary,
-        content: formState.content,
-        status: formState.status,
-        tags: formState.tagNames,
-      })
-      if (result) navigate(`/posts/${result}`)
+      const saved = await updatePost(slug, payload)
+      if (saved) navigate(`/posts/${payload.slug}`)
+      return
+    }
+
+    const createdSlug = await createPost(payload)
+    if (createdSlug) navigate(`/posts/${createdSlug}`)
+  }
+
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault()
+    void savePost(formState.status)
+  }
+
+  function focusSection(section: 'title' | 'content' | 'settings') {
+    if (section === 'title') {
+      titleRef.current?.focus()
+      titleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+
+    if (section === 'content') {
+      contentRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
+
+    if (settingsRef.current) {
+      settingsRef.current.open = true
+      settingsRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' })
     }
   }
 
   return (
-    <div className="mx-auto max-w-[1080px] px-5 py-10 sm:px-8 sm:py-14">
-      <div className="mb-9 border-b border-line pb-7">
-        <p className="text-sm font-medium text-primary">创作空间</p>
-        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.035em] text-ink">
-          {isEdit ? '编辑文章' : '新建文章'}
-        </h1>
-        <p className="mt-2 text-sm text-muted">把想法整理成一篇值得长期保留的内容。</p>
+    <div className="editor-workspace">
+      <div className="editor-commandbar">
+        <div className="editor-commandbar__inner">
+          <div className="editor-commandbar__identity">
+            <Link to="/blog" aria-label="返回文章列表">←</Link>
+            <div>
+              <strong>创作台</strong>
+              <span>{isEdit ? '编辑文章' : '新建文章'}</span>
+            </div>
+          </div>
+          <div className="editor-commandbar__status" aria-live="polite">
+            <span className={`editor-status-dot editor-status-dot--${formState.status}`} />
+            {loading ? '正在保存…' : formState.status === 'published' ? '已发布内容' : '草稿内容'}
+          </div>
+          <div className="editor-commandbar__tools" aria-label="写作提示">
+            <span>支持 Markdown</span>
+            <span>{characterCount} 字</span>
+          </div>
+        </div>
       </div>
 
-      {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
+      {error && <div className="editor-error" role="alert">{error}</div>}
 
-      <form onSubmit={handleSubmit} className="space-y-6 rounded-[14px] border border-line bg-white p-5 sm:p-8">
-        <div>
-          <label className="mb-2 block text-sm font-medium text-ink">标题</label>
-          <input
-            type="text"
-            value={formState.title}
-            onChange={(e) => handleTitleChange(e.target.value)}
-            className="min-h-12 w-full rounded-[10px] border border-line bg-white px-4 text-base text-ink placeholder:text-muted focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-            placeholder="文章标题"
-          />
-        </div>
+      <form onSubmit={handleSubmit} className="editor-workspace__layout">
+        <aside className="editor-outline" aria-label="文章结构">
+          <section className="editor-outline__card">
+            <div className="editor-outline__author">
+              <span className="editor-outline__avatar" aria-hidden="true">逃</span>
+              <div><strong>bba70</strong><span>个人博客</span></div>
+            </div>
+            {(!isEdit || loadedSlug === slug) && <CoverUploader
+              key={slug ?? 'new'}
+              value={formState.coverURL}
+              title={formState.title}
+              status={formState.status}
+              onChange={(coverURL) => setFormState((previous) => ({ ...previous, coverURL }))}
+              onBusyChange={setCoverUploading}
+            />}
+            <nav className="editor-outline__nav" aria-label="快速定位">
+              <button type="button" onClick={() => focusSection('title')}><span>01</span>标题</button>
+              <button type="button" onClick={() => focusSection('content')}><span>02</span>正文</button>
+              <button type="button" onClick={() => focusSection('settings')}><span>03</span>文章设置</button>
+            </nav>
+          </section>
+          {isEdit ? (
+            <Link className="editor-outline__new" to="/editor"><span aria-hidden="true">＋</span> 新建文章</Link>
+          ) : (
+            <p className="editor-outline__hint">先写下标题，再开始整理正文。</p>
+          )}
+        </aside>
 
-        <div>
-          <div className="mb-1 flex items-center justify-between">
-            <label className="text-sm font-medium text-ink">Slug</label>
-            <button
-              type="button"
-              onClick={() => setAutoSlug(!formState.autoSlug)}
-              className="text-xs text-muted hover:text-primary"
-            >
-              {formState.autoSlug ? '自动生成' : '手动编辑'}
-            </button>
-          </div>
-          <input
-            type="text"
-            value={formState.postSlug}
-            onChange={(e) => setPostSlug(e.target.value)}
-            disabled={formState.autoSlug}
-            className="min-h-11 w-full rounded-[10px] border border-line bg-white px-4 text-sm text-ink disabled:bg-soft focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-            placeholder="url-slug"
-          />
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-medium text-ink">摘要</label>
-          <textarea
-            value={formState.summary}
-            onChange={(e) => setSummary(e.target.value)}
-            rows={2}
-            className="w-full rounded-[10px] border border-line bg-white px-4 py-3 text-sm leading-6 text-ink placeholder:text-muted focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none"
-            placeholder="可选的文章摘要"
-          />
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-medium text-ink">标签</label>
-          <TagSelector selectedTags={formState.tagNames} onChange={setTagNames} />
-        </div>
-
-        <div>
-          <label className="mb-2 block text-sm font-medium text-ink">内容</label>
-          <div className="min-h-[380px] overflow-hidden rounded-[10px] border border-line bg-white focus-within:border-primary">
-            {(!isEdit || loadedSlug === slug) && (
-              <MilkdownEditor
-                key={isEdit ? slug : 'new'}
-                initialContent={formState.content}
-                onChange={setContent}
+        <main className="editor-paper">
+          <div className="editor-paper__heading">
+            <label className="sr-only" htmlFor="editor-title">文章标题</label>
+            <div className="editor-title-row">
+              <input
+                id="editor-title"
+                ref={titleRef}
+                type="text"
+                value={formState.title}
+                maxLength={80}
+                onChange={(event) => handleTitleChange(event.target.value)}
+                placeholder="请在这里输入标题"
               />
+              <span>{formState.title.length}/80</span>
+            </div>
+            <label className="sr-only" htmlFor="editor-summary">文章摘要</label>
+            <textarea
+              id="editor-summary"
+              value={formState.summary}
+              onChange={(event) => setSummary(event.target.value)}
+              rows={2}
+              maxLength={180}
+              placeholder="写一段简短摘要，帮助读者了解文章内容（可选）"
+            />
+          </div>
+
+          <div ref={contentRef} className="editor-paper__body">
+            {previewOpen ? (
+              <section className="editor-preview" aria-label="文章预览">
+                <p className="editor-preview__label">阅读预览</p>
+                {formState.content.trim() ? (
+                  <MarkdownRenderer content={formState.content} />
+                ) : (
+                  <p className="editor-preview__empty">正文内容会在这里呈现。</p>
+                )}
+              </section>
+            ) : (
+              (!isEdit || loadedSlug === slug) && (
+                <MilkdownEditor
+                  key={isEdit ? slug : 'new'}
+                  initialContent={formState.content}
+                  onChange={setContent}
+                />
+              )
             )}
           </div>
-        </div>
 
-        <div className="flex flex-wrap items-center justify-end gap-3 border-t border-line pt-6">
-          <select
-            value={formState.status}
-            onChange={(e) => setStatus(e.target.value as PostStatus)}
-            className="min-h-11 rounded-[10px] border border-line bg-white px-4 text-sm text-ink focus:border-primary focus:outline-none"
-          >
-            <option value="draft">草稿</option>
-            <option value="published">发布</option>
-          </select>
+          <footer className="editor-paper__footer">
+            <div><strong>正文 {characterCount} 字</strong><span>内容会以 Markdown 保存</span></div>
+            <div className="editor-paper__actions">
+              <button type="button" className="editor-button editor-button--quiet" onClick={() => void savePost('draft')} disabled={!canSave}>
+                {loading ? '保存中…' : '保存草稿'}
+              </button>
+              <button type="button" className="editor-button editor-button--outline" onClick={() => setPreviewOpen((open) => !open)}>
+                {previewOpen ? '继续编辑' : '预览'}
+              </button>
+              <button type="button" className="editor-button editor-button--primary" onClick={() => void savePost('published')} disabled={!canSave}>
+                {formState.status === 'published' ? '更新发布' : '发布'}
+              </button>
+            </div>
+          </footer>
+        </main>
 
-          <button
-            type="submit"
-            disabled={loading || !formState.title.trim() || !formState.content.trim()}
-            className="min-h-11 rounded-[10px] bg-primary px-7 text-sm font-medium text-white hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loading ? '保存中...' : isEdit ? '更新' : '创建'}
-          </button>
-        </div>
+        <aside className="editor-settings" aria-label="文章设置">
+          <details ref={settingsRef} open className="editor-settings__panel">
+            <summary><span>文章设置</span><span aria-hidden="true">⌄</span></summary>
+            <div className="editor-settings__content">
+              <div className="editor-setting-field">
+                <div className="editor-setting-field__label">
+                  <label htmlFor="editor-slug">访问地址</label>
+                  <button
+                    type="button"
+                    onClick={() => setFormState((previous) => ({ ...previous, autoSlug: !previous.autoSlug }))}
+                  >
+                    {formState.autoSlug ? '自动生成' : '手动编辑'}
+                  </button>
+                </div>
+                <div className="editor-slug-input">
+                  <span>/posts/</span>
+                  <input
+                    id="editor-slug"
+                    type="text"
+                    value={formState.postSlug}
+                    onChange={(event) => setPostSlug(event.target.value)}
+                    disabled={formState.autoSlug}
+                    placeholder="article-slug"
+                  />
+                </div>
+              </div>
+
+              <div className="editor-setting-field">
+                <span className="editor-setting-field__title">标签</span>
+                <TagSelector selectedTags={formState.tagNames} onChange={setTagNames} />
+              </div>
+
+              <div className="editor-setting-field">
+                <span className="editor-setting-field__title">发布状态</span>
+                <div className="editor-setting-status">
+                  <span className={`editor-status-dot editor-status-dot--${formState.status}`} />
+                  <div>
+                    <strong>{formState.status === 'published' ? '已发布' : '草稿'}</strong>
+                    <span>{formState.status === 'published' ? '读者可以访问这篇文章' : '仅保存在创作空间中'}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <section className="editor-settings__tip">
+            <span aria-hidden="true">✦</span>
+            <div><strong>写作提示</strong><p>清晰的标题和摘要，能让文章更容易被理解。</p></div>
+          </section>
+        </aside>
       </form>
     </div>
   )

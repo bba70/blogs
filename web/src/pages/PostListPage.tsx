@@ -2,12 +2,14 @@ import { useEffect, useMemo } from 'react'
 import { Link, useSearchParams } from 'react-router'
 import { useAuthStore, usePostStore, useTagStore } from '@/stores'
 import PostCard from '@/components/PostCard'
+import PostCover from '@/components/PostCover'
 import ProfileSidebar from '@/components/ProfileSidebar'
 import Pagination from '@/components/Pagination'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ErrorMessage from '@/components/ErrorMessage'
 import TagBadge from '@/components/TagBadge'
 import StatusBadge from '@/components/StatusBadge'
+import useArticleReveal from '@/hooks/useArticleReveal'
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString('zh-CN', {
@@ -22,6 +24,7 @@ function readingMinutes(content: string) {
 }
 
 export default function PostListPage() {
+  const featuredRef = useArticleReveal()
   const [searchParams, setSearchParams] = useSearchParams()
   const page = Number(searchParams.get('page')) || 1
   const activeTag = searchParams.get('tag') ?? undefined
@@ -64,12 +67,12 @@ export default function PostListPage() {
 
   return (
     <div>
-      <section id="home" className="home-hero scroll-mt-20" aria-labelledby="home-title">
+      <section id="home" className="home-hero scroll-mt-[var(--header-height)]" aria-labelledby="home-title">
         <div className="home-hero__glow" aria-hidden="true" />
-        <div className="relative z-10 mx-auto flex min-h-[calc(100svh-72px)] max-w-[1000px] flex-col items-center justify-center px-5 py-20 text-center sm:px-8">
-          <p className="mb-5 text-sm font-medium tracking-[0.2em] text-primary sm:text-base">你好，欢迎来到昼白。</p>
+        <div className="relative z-10 mx-auto flex min-h-[calc(100svh-var(--header-height))] max-w-[1000px] flex-col items-center justify-center px-5 py-20 text-center sm:px-8">
+          <p className="mb-5 text-sm font-medium tracking-[0.2em] text-primary sm:text-base">你好，欢迎来到逃跑计划。</p>
           <h1 id="home-title" className="max-w-[900px] text-[clamp(3.2rem,8.5vw,7rem)] font-semibold leading-[0.98] tracking-[-0.07em] text-[#111014]">
-            你好，<br className="sm:hidden" />我是陈默。
+            <br className="sm:hidden" />我是 bba70。
           </h1>
           <p className="mt-7 max-w-2xl text-base leading-8 text-[#65636b] sm:mt-9 sm:text-xl sm:leading-9">
             一名独立开发者与写作者，在这里记录代码、产品与生活。
@@ -113,14 +116,14 @@ export default function PostListPage() {
             ) : error ? (
               <ErrorMessage message={error} onRetry={() => fetchPosts({ page, per_page: 10, tag: activeTag })} />
             ) : featuredPost ? (
-              <article className="grid overflow-hidden rounded-[14px] border border-line bg-white md:grid-cols-[1.1fr_0.95fr]">
-                <div className="feature-art" aria-hidden="true">
+              <article ref={featuredRef} className="featured-article grid overflow-hidden rounded-[14px] border border-line bg-white md:grid-cols-[1.1fr_0.95fr]">
+                <PostCover src={featuredPost.cover_url} className="feature-art featured-post-cover" fallback={<div className="feature-art" aria-hidden="true">
                   <span className="absolute top-[14%] left-[7%] z-10 text-xs font-medium text-primary">写作</span>
                   <span className="absolute top-[22%] left-[7%] z-10 max-w-28 text-sm leading-7 text-muted">是重组思考的隐形工程。</span>
                   <span className="feature-dots" />
                   <span className="feature-accent" />
                   <span className="feature-word">思考</span>
-                </div>
+                </div>} />
 
                 <div className="flex flex-col justify-between p-6 sm:p-8 lg:p-9">
                   <div>
@@ -187,8 +190,8 @@ export default function PostListPage() {
             )}
 
             {remainingPosts.length > 0 ? (
-              <div className="overflow-hidden rounded-[14px] border border-line bg-white">
-                {remainingPosts.map((post) => <PostCard key={post.id} post={post} />)}
+              <div className="grid gap-4">
+                {remainingPosts.map((post, index) => <PostCard key={post.id} post={post} index={index} />)}
               </div>
             ) : featuredPost ? (
               <div className="rounded-[14px] border border-line px-6 py-10 text-center text-sm text-muted">更多文章正在整理中。</div>

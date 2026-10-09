@@ -2,6 +2,7 @@ package blog
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -34,6 +35,7 @@ type Post struct {
 	Slug        string     `json:"slug"`
 	Content     string     `json:"content"`
 	Summary     string     `json:"summary"`
+	CoverURL    string     `json:"cover_url"`
 	Status      string     `json:"status"`
 	Tags        []string   `json:"tags"`
 	CreatedAt   time.Time  `json:"created_at"`
@@ -47,21 +49,23 @@ type Tag struct {
 }
 
 type CreatePostReq struct {
-	Title   string   `json:"title"`
-	Slug    string   `json:"slug"`
-	Content string   `json:"content"`
-	Summary string   `json:"summary"`
-	Status  string   `json:"status"`
-	Tags    []string `json:"tags"`
+	Title    string   `json:"title"`
+	Slug     string   `json:"slug"`
+	Content  string   `json:"content"`
+	Summary  string   `json:"summary"`
+	CoverURL string   `json:"cover_url"`
+	Status   string   `json:"status"`
+	Tags     []string `json:"tags"`
 }
 
 type UpdatePostReq struct {
-	Title   *string  `json:"title,omitempty"`
-	Slug    *string  `json:"slug,omitempty"`
-	Content *string  `json:"content,omitempty"`
-	Summary *string  `json:"summary,omitempty"`
-	Status  *string  `json:"status,omitempty"`
-	Tags    []string `json:"tags,omitempty"`
+	Title    *string  `json:"title,omitempty"`
+	Slug     *string  `json:"slug,omitempty"`
+	Content  *string  `json:"content,omitempty"`
+	Summary  *string  `json:"summary,omitempty"`
+	CoverURL *string  `json:"cover_url,omitempty"`
+	Status   *string  `json:"status,omitempty"`
+	Tags     []string `json:"tags,omitempty"`
 }
 
 type ListPostsReq struct {
@@ -90,6 +94,9 @@ func checkStatus(status string) error {
 }
 
 func (r CreatePostReq) Validate() error {
+	if err := checkCoverURL(r.CoverURL); err != nil {
+		return err
+	}
 	if strings.TrimSpace(r.Title) == "" {
 		return validationErrorf("title is required")
 	}
@@ -114,6 +121,11 @@ func (r CreatePostReq) Validate() error {
 }
 
 func (r UpdatePostReq) Validate() error {
+	if r.CoverURL != nil {
+		if err := checkCoverURL(*r.CoverURL); err != nil {
+			return err
+		}
+	}
 	if r.Title != nil {
 		if strings.TrimSpace(*r.Title) == "" {
 			return validationErrorf("title cannot be empty")
@@ -139,4 +151,21 @@ func (r UpdatePostReq) Validate() error {
 		}
 	}
 	return nil
+}
+
+func checkCoverURL(value string) error {
+	if value == "" {
+		return nil
+	}
+	u, err := url.Parse(value)
+	if err != nil || len(value) > 2048 || u.User != nil || strings.ContainsAny(value, "\\\r\n\t ") {
+		return validationErrorf("invalid cover URL")
+	}
+	if (u.Scheme == "http" || u.Scheme == "https") && u.Host != "" {
+		return nil
+	}
+	if u.Scheme == "" && u.Host == "" && strings.HasPrefix(value, "/api/v1/media/") && !strings.Contains(u.Path, "..") {
+		return nil
+	}
+	return validationErrorf("invalid cover URL")
 }

@@ -23,7 +23,7 @@ async function fetchJSON(path: string, options?: RequestInit) {
     credentials: 'include',
     ...options,
     headers: {
-      'Content-Type': 'application/json',
+      ...(options?.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
       ...options?.headers,
     },
   })

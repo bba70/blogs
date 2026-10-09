@@ -14,7 +14,7 @@ import (
 )
 
 // maxBodySize 限制单个请求体大小（2MB），防止超大载荷。
-// 正文以 Markdown 为主足够用；图片等大文件走 Phase 4 的媒体上传。
+// 正文以 Markdown 为主；封面图片通过独立媒体上传接口传输。
 const maxBodySize = 2 << 20
 
 type Handler struct {

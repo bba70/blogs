@@ -99,12 +99,13 @@ func (s *Service) CreatePost(ctx context.Context, viewer Viewer, req CreatePostR
 	}
 
 	p := &Post{
-		Title:   req.Title,
-		Slug:    req.Slug,
-		Content: req.Content,
-		Summary: req.Summary,
-		Status:  req.Status,
-		Tags:    req.Tags,
+		Title:    req.Title,
+		Slug:     req.Slug,
+		Content:  req.Content,
+		Summary:  req.Summary,
+		CoverURL: req.CoverURL,
+		Status:   req.Status,
+		Tags:     req.Tags,
 	}
 
 	if req.Status == StatusPublished {

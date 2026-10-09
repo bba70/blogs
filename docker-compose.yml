@@ -26,6 +26,7 @@ services:
     restart: unless-stopped
     environment:
       SERVER_PORT: 8080
+      UPLOAD_DIR: /app/uploads
       DB_HOST: db
       DB_PORT: 5432
       DB_USER: ${DB_USER:-blogs}
@@ -38,6 +39,8 @@ services:
       AUTH_ALLOWED_ORIGINS: ${AUTH_ALLOWED_ORIGINS:?AUTH_ALLOWED_ORIGINS is required}
     ports:
       - "127.0.0.1:${API_PORT:-8080}:8080"
+    volumes:
+      - ./uploads:/app/uploads
     depends_on:
       db:
         condition: service_healthy

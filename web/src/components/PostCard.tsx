@@ -2,6 +2,8 @@ import { Link } from 'react-router'
 import type { Post } from '@/types'
 import TagBadge from './TagBadge'
 import StatusBadge from './StatusBadge'
+import PostCover from './PostCover'
+import useArticleReveal from '@/hooks/useArticleReveal'
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString('zh-CN', {
@@ -15,13 +17,14 @@ function readingMinutes(content: string) {
   return Math.max(1, Math.ceil(content.replace(/\s/g, '').length / 500))
 }
 
-export default function PostCard({ post }: { post: Post }) {
+export default function PostCard({ post, index = 0 }: { post: Post; index?: number }) {
+  const revealRef = useArticleReveal(index * 45)
   const artTypes = ['cube', 'wave', 'radial']
   const artType = artTypes[Math.abs(post.id) % artTypes.length]
 
   return (
-    <article className="group flex min-h-[116px] border-b border-line bg-white last:border-b-0">
-      <div className={`article-art article-art-${artType} self-stretch`} aria-hidden="true" />
+    <article ref={revealRef} className="article-card group flex min-h-[116px] rounded-[14px] border border-line bg-white">
+      <PostCover src={post.cover_url} className="article-art post-card-cover ml-4 self-center rounded-lg" fallback={<div className={`article-art article-art-${artType} ml-4 self-center rounded-lg`} aria-hidden="true" />} />
       <div className="flex min-w-0 flex-1 flex-col gap-3 px-5 py-5 lg:flex-row lg:items-center lg:gap-8 lg:px-7">
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex items-center gap-2 text-xs font-medium text-primary">

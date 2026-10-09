@@ -1,3 +1,4 @@
+import { Link } from 'react-router'
 import type { Post, Tag } from '@/types'
 
 interface ProfileSidebarProps {
@@ -20,7 +21,7 @@ export default function ProfileSidebar({ articleCount, posts, tags }: ProfileSid
         <div className="mx-auto flex h-28 w-28 items-center justify-center rounded-full border border-line bg-white" aria-hidden="true">
           <span className="profile-mark" />
         </div>
-        <h2 className="mt-5 text-2xl font-semibold tracking-tight">陈默</h2>
+        <h2 className="mt-5 text-2xl font-semibold tracking-tight">bba70</h2>
         <p className="mt-2 text-sm text-muted">独立开发者 / 写作者</p>
 
         <dl className="mt-7 grid grid-cols-3 border-y border-line py-5">
@@ -76,6 +77,7 @@ export default function ProfileSidebar({ articleCount, posts, tags }: ProfileSid
             <p className="py-3 text-sm text-muted">发布文章后将在这里形成时间线。</p>
           )}
         </div>
+        <Link to="/archive" className="mt-5 inline-flex min-h-10 items-center text-sm text-primary hover:text-primary-dark">查看完整月度归档 →</Link>
       </section>
     </aside>
   )

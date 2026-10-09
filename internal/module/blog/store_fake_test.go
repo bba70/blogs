@@ -105,6 +105,9 @@ func (s *fakeStore) UpdatePost(_ context.Context, slug string, req *UpdatePostRe
 	if req.Summary != nil {
 		p.Summary = *req.Summary
 	}
+	if req.CoverURL != nil {
+		p.CoverURL = *req.CoverURL
+	}
 	if req.Status != nil {
 		p.Status = *req.Status
 	}

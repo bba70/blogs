@@ -14,9 +14,10 @@ import (
 const MinJWTSecretLen = 32
 
 type Config struct {
-	Server ServerConfig
-	DB     DBConfig
-	Auth   AuthConfig
+	Server    ServerConfig
+	DB        DBConfig
+	Auth      AuthConfig
+	UploadDir string
 }
 
 type ServerConfig struct {
@@ -58,6 +59,7 @@ func Load() (*Config, error) {
 	loadDotEnv(".env")
 
 	cfg := &Config{
+		UploadDir: envStr("UPLOAD_DIR", "uploads"),
 		Server: ServerConfig{
 			Port: envInt("SERVER_PORT", 8080),
 		},

@@ -58,7 +58,7 @@ func (r *Repository) ListPosts(ctx context.Context, req ListPostsReq) ([]Post, i
 	}
 
 	offset := (req.Page - 1) * req.PerPage
-	querySQL := fmt.Sprintf(`SELECT p.id, p.title, p.slug, p.content, p.summary, p.status,
+	querySQL := fmt.Sprintf(`SELECT p.id, p.title, p.slug, p.content, p.summary, p.cover_url, p.status,
 		p.created_at, p.updated_at, p.published_at,
 		COALESCE(array_agg(t.name) FILTER (WHERE t.name IS NOT NULL), '{}') AS tags
 		FROM posts p
@@ -80,7 +80,7 @@ func (r *Repository) ListPosts(ctx context.Context, req ListPostsReq) ([]Post, i
 	var posts []Post
 	for rows.Next() {
 		var p Post
-		if err := rows.Scan(&p.ID, &p.Title, &p.Slug, &p.Content, &p.Summary,
+		if err := rows.Scan(&p.ID, &p.Title, &p.Slug, &p.Content, &p.Summary, &p.CoverURL,
 			&p.Status, &p.CreatedAt, &p.UpdatedAt, &p.PublishedAt, &p.Tags,
 		); err != nil {
 			return nil, 0, err
@@ -102,7 +102,7 @@ func (r *Repository) GetPublishedPostBySlug(ctx context.Context, slug string) (*
 
 func (r *Repository) getPostBySlug(ctx context.Context, whereClause string, args ...any) (*Post, error) {
 	var p Post
-	query := `SELECT p.id, p.title, p.slug, p.content, p.summary, p.status,
+	query := `SELECT p.id, p.title, p.slug, p.content, p.summary, p.cover_url, p.status,
 		p.created_at, p.updated_at, p.published_at,
 		COALESCE(array_agg(t.name) FILTER (WHERE t.name IS NOT NULL), '{}') AS tags
 		FROM posts p
@@ -111,7 +111,7 @@ func (r *Repository) getPostBySlug(ctx context.Context, whereClause string, args
 		` + whereClause + `
 		GROUP BY p.id`
 
-	err := r.db.QueryRow(ctx, query, args...).Scan(&p.ID, &p.Title, &p.Slug, &p.Content, &p.Summary,
+	err := r.db.QueryRow(ctx, query, args...).Scan(&p.ID, &p.Title, &p.Slug, &p.Content, &p.Summary, &p.CoverURL,
 		&p.Status, &p.CreatedAt, &p.UpdatedAt, &p.PublishedAt, &p.Tags,
 	)
 	if err == pgx.ErrNoRows {
@@ -125,10 +125,10 @@ func (r *Repository) getPostBySlug(ctx context.Context, whereClause string, args
 
 func (r *Repository) CreatePost(ctx context.Context, p *Post) error {
 	err := r.db.QueryRow(ctx,
-		`INSERT INTO posts (title, slug, content, summary, status, published_at)
-		VALUES ($1, $2, $3, $4, $5, $6)
+		`INSERT INTO posts (title, slug, content, summary, status, published_at, cover_url)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
 		RETURNING id, created_at, updated_at`,
-		p.Title, p.Slug, p.Content, p.Summary, p.Status, p.PublishedAt,
+		p.Title, p.Slug, p.Content, p.Summary, p.Status, p.PublishedAt, p.CoverURL,
 	).Scan(&p.ID, &p.CreatedAt, &p.UpdatedAt)
 	if isUniqueViolation(err) {
 		return ErrSlugExists
@@ -158,6 +158,9 @@ func (r *Repository) UpdatePost(ctx context.Context, slug string, p *UpdatePostR
 	}
 	if p.Summary != nil {
 		addSet("summary", *p.Summary)
+	}
+	if p.CoverURL != nil {
+		addSet("cover_url", *p.CoverURL)
 	}
 	if p.Status != nil {
 		addSet("status", *p.Status)

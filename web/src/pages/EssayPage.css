@@ -1,0 +1,72 @@
+.essay-page { min-height: calc(100vh - var(--header-height)); background: var(--color-canvas); }
+.essay-hero h1, .essay-reading__heading h2 { display: flex; align-items: center; gap: 10px; }
+.essay-hero h1 { gap: 16px; }
+.essay-reading__heading h2 > svg { flex: none; color: var(--color-primary); }
+.essay-list-item__meta time, .essay-list-item__minutes { display: inline-flex; align-items: center; gap: 6px; }
+.essay-list-item__tag { gap: 4px; }
+.essay-list-item__meta svg { flex: none; }
+.essay-empty__icon { display: block; margin: 0 auto 16px; color: #39776d; }
+.essay-shell { width: min(100% - 40px, 1280px); margin-inline: auto; }
+.essay-hero { padding: 48px 0 36px; }
+.essay-hero__row { display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+.essay-hero h1 { margin: 0; color: var(--color-ink); font-size: clamp(2.4rem, 5vw, 3rem); font-weight: 650; letter-spacing: -0.025em; line-height: 1.2; }
+.essay-hero__row p { margin: 15px 0 0; color: var(--color-muted); font-size: 15px; line-height: 1.8; }
+.essay-write { display: inline-flex; flex: none; min-height: 44px; align-items: center; justify-content: center; gap: 8px; padding: 10px 18px; color: #fff; background: var(--color-primary); border: 1px solid var(--color-primary); border-radius: 10px; font-size: 14px; cursor: pointer; }
+.essay-write:hover { background: var(--color-primary-dark); }
+.essay-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 52px; border-top: 1px solid var(--color-line); padding-block: 30px 64px; align-items: start; }
+.essay-main { display: grid; grid-template-columns: minmax(0, 1fr); gap: 24px; min-width: 0; }
+@media (max-width: 960px) { .essay-layout { grid-template-columns: minmax(0, 1fr); gap: 36px; } }
+.essay-reading { min-width: 0; }
+.essay-reading__heading { display: flex; align-items: baseline; justify-content: space-between; gap: 16px; flex-wrap: wrap; min-height: 40px; margin-bottom: 16px; }
+.essay-reading__heading h2 { margin: 0; font-size: 16px; font-weight: 500; overflow-wrap: anywhere; }
+.essay-count { color: var(--color-muted); font-size: 12px; }
+.essay-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 22px; }
+.essay-list > .essay-state, .essay-list > .essay-loading { grid-column: 1 / -1; }
+.essay-list-item { min-width: 0; padding: 26px 30px; border: 1px solid var(--color-line); border-radius: 14px; background: var(--color-canvas); }
+.essay-list-item:hover, .essay-list-item:focus-within { background: var(--color-soft); }
+.essay-list-item__content { min-width: 0; }
+.essay-list-item__title { margin: 0; color: var(--color-ink); overflow-wrap: anywhere; font-size: clamp(1.25rem, 2.2vw, 1.5rem); font-weight: 650; line-height: 1.55; letter-spacing: -0.025em; }
+.essay-list-item__title a:hover { color: var(--color-primary); }
+.essay-badge { display: inline-block; vertical-align: middle; margin-left: 10px; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 400; letter-spacing: normal; }
+.essay-badge--draft { color: var(--color-primary); background: #eff1fa; }
+.essay-list-item__summary { display: -webkit-box; overflow: hidden; margin: 12px 0 0; color: var(--color-muted); font-size: 15px; line-height: 2; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.essay-list-item__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 20px; color: var(--color-muted); font-size: 12px; }
+.essay-list-item__tags { display: flex; flex-wrap: wrap; gap: 12px; min-width: 0; }
+.essay-list-item__tag { display: inline-flex; align-items: center; min-height: 40px; color: var(--color-primary); overflow-wrap: anywhere; }
+.essay-list-item__tag:hover { text-decoration: underline; }
+.essay-expand { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; margin-left: auto; padding: 0; color: var(--color-primary); background: transparent; border: 0; font-size: 12px; cursor: pointer; }
+.essay-list-item__cover { display: block; max-width: 100%; width: 100%; max-height: 240px; margin-top: 18px; object-fit: cover; border-radius: 10px; }
+.essay-expanded-content { margin-top: 18px; overflow-wrap: anywhere; }
+.essay-expanded-content[hidden] { display: none; }
+.essay-expanded-content .prose { font-family: inherit; font-size: 15px; line-height: 2; }
+.essay-expanded-content .prose > :first-child { margin-top: 0; }
+.essay-expanded-content .prose > :last-child { margin-bottom: 0; }
+.essay-expanded-content pre { max-width: 100%; overflow-x: auto; }
+.essay-expanded-content table { display: block; max-width: 100%; overflow-x: auto; }
+.essay-state, .essay-loading { padding: 36px 24px; text-align: center; border: 1px solid var(--color-line); border-radius: 14px; }
+.essay-loading > span { display: block; color: var(--color-muted); font-size: 14px; }
+.essay-empty { padding-block: 48px; }
+.essay-empty h2 { margin: 0 0 12px; font-size: 20px; font-weight: 600; }
+.essay-empty p { margin: 0 0 24px; color: var(--color-muted); font-size: 14px; line-height: 1.8; }
+.essay-end { margin: 26px 0 0; color: var(--color-muted); font-size: 12px; text-align: center; }
+@media (min-width: 761px) {
+  .essay-list--masonry { grid-auto-rows: 1px; row-gap: 0; }
+  .essay-list--masonry > .essay-list-item { grid-row-end: span var(--essay-row-span, 1); margin-bottom: 22px; }
+}
+@media (max-width: 760px) {
+  .essay-shell { width: calc(100% - 32px); }
+  .essay-hero { padding: 32px 0 26px; }
+  .essay-hero__row { gap: 12px; align-items: flex-start; }
+  .essay-hero h1 { font-size: 38px; }
+  .essay-hero__row p { max-width: 200px; font-size: 13px; }
+  .essay-hero__row .essay-write { padding-inline: 12px; font-size: 13px; }
+  .essay-layout { padding-block: 24px 48px; }
+  .essay-list { grid-template-columns: minmax(0, 1fr); }
+  .essay-list-item { padding: 22px 16px; }
+  .essay-list-item__summary { font-size: 14px; }
+  .essay-list-item__meta { gap: 10px; }
+  .essay-list-item__minutes { display: none; }
+  .essay-reading__heading { min-height: 0; margin-bottom: 18px; }
+  .essay-state { padding-inline: 16px; }
+}
+@media (pointer: coarse) { .essay-expand, .essay-list-item__tag { min-height: 44px; } }

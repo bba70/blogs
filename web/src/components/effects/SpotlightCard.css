@@ -1,0 +1,5 @@
+.spotlight-card { position: relative; isolation: isolate; overflow: hidden; }
+.spotlight-card__light { position: absolute; z-index: -1; left: 0; top: 0; width: 320px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgb(88 104 178 / 12%), transparent 70%); opacity: 0; pointer-events: none; transition: opacity 180ms ease; }
+@media (hover: hover) and (pointer: fine) { .spotlight-card:hover .spotlight-card__light { opacity: 1; } }
+.spotlight-card:focus-within { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) { .spotlight-card__light { display: none; } }

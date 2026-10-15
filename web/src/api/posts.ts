@@ -1,4 +1,10 @@
-import type { Post, PostListParams, CreatePostPayload, UpdatePostPayload } from '@/types'
+import type {
+  Post,
+  PostKind,
+  PostListParams,
+  CreatePostPayload,
+  UpdatePostPayload,
+} from '@/types'
 import { request, requestPaginated } from './client'
 
 function buildQuery(params?: PostListParams): string {
@@ -8,20 +14,23 @@ function buildQuery(params?: PostListParams): string {
   if (params.per_page) sp.set('per_page', String(params.per_page))
   if (params.tag) sp.set('tag', params.tag)
   if (params.status) sp.set('status', params.status)
+  if (params.kind) sp.set('kind', params.kind)
   const q = sp.toString()
   return q ? `?${q}` : ''
 }
 
-export async function fetchPosts(params?: PostListParams) {
-  return requestPaginated<Post>(`/posts${buildQuery(params)}`)
+export async function fetchPosts(params?: PostListParams, signal?: AbortSignal) {
+  return requestPaginated<Post>(`/posts${buildQuery(params)}`, { signal })
 }
 
-export async function fetchArchivePosts(signal?: AbortSignal) {
+// fetchArchivePosts 按内容类型取完所有已发布内容。
+// 归档只收录已发布内容；随笔请求仅限作者。
+export async function fetchArchivePosts(kind: PostKind, signal?: AbortSignal) {
   const posts: Post[] = []
   let page = 1
   while (true) {
     const result = await requestPaginated<Post>(
-      `/posts${buildQuery({ page, per_page: 100, status: 'published' })}`,
+      `/posts${buildQuery({ page, per_page: 100, status: 'published', kind })}`,
       { signal },
     )
     posts.push(...result.data)

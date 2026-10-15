@@ -1,14 +1,27 @@
 .archive-page {
-  width: min(100% - 80px, 1040px);
+  width: min(100% - 40px, 1280px);
   margin-inline: auto;
   padding-block: 68px 96px;
 }
 
 .archive-intro { padding-bottom: 42px; border-bottom: 1px solid var(--color-line); }
+.archive-intro h1 { display: flex; align-items: center; gap: 16px; }
+.archive-total h2 { display: flex; flex-wrap: wrap; align-items: center; column-gap: 10px; }
+.archive-total h2 > svg { flex: none; color: var(--color-primary); }
+.archive-empty > span { display: inline-flex; }
+.archive-empty a { gap: 8px; }
 .archive-eyebrow { margin: 0 0 18px; color: var(--color-primary); font-size: 11px; font-weight: 600; letter-spacing: .17em; }
 .archive-intro h1 { margin: 0; font-size: clamp(32px, 4vw, 46px); font-weight: 600; letter-spacing: -.04em; }
 .archive-description { margin: 18px 0 0; color: var(--color-muted); font-size: 14px; line-height: 1.9; }
-.archive-content { padding-top: 48px; }
+.archive-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 52px; align-items: start; padding-top: 38px; }
+.archive-content { min-width: 0; }
+.archive-kind-switch { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 32px; }
+.archive-kind-switch button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 104px; min-height: 44px; padding: 10px 16px; color: var(--color-muted); background: var(--color-canvas); border: 1px solid var(--color-line); border-radius: 10px; font-size: 14px; cursor: pointer; }
+.archive-kind-switch button:hover { color: var(--color-primary); border-color: var(--color-primary); }
+.archive-kind-switch button[aria-pressed='true'] { color: white; background: var(--color-primary); border-color: var(--color-primary); }
+.archive-kind-switch button:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 3px; }
+.archive-kind-switch button > span { font-size: 12px; font-variant-numeric: tabular-nums; }
+@media (max-width: 960px) { .archive-layout { grid-template-columns: minmax(0, 1fr); gap: 36px; } }
 .archive-timeline { position: relative; margin-left: 12px; padding-left: 42px; }
 .archive-timeline::before { content: ''; position: absolute; top: 20px; bottom: 26px; left: 0; width: 1px; background: #dce0f0; }
 .archive-total, .archive-year, .archive-entry, .archive-end { position: relative; }
@@ -47,7 +60,7 @@
 @media (max-width: 720px) {
   .archive-page { width: calc(100% - 40px); padding-block: 40px 64px; }
   .archive-intro { padding-bottom: 30px; }
-  .archive-content { padding-top: 32px; }
+  .archive-layout { padding-top: 32px; }
   .archive-timeline { margin-left: 10px; padding-left: 28px; }
   .archive-total::before { left: -36px; width: 17px; height: 17px; border-width: 4px; }
   .archive-total h2 { margin-bottom: 32px; font-size: 22px; }

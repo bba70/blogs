@@ -81,6 +81,13 @@
   border: 1px solid #e6e5e9;
   border-radius: 999px;
   background: #fafafd;
+  color: #666770;
+}
+
+.editor-commandbar__visibility {
+  padding-left: 8px;
+  border-left: 1px solid #e1e1e4;
+  color: #737373;
 }
 
 .editor-commandbar__tools {
@@ -174,6 +181,15 @@
   font-weight: 700;
 }
 
+.editor-outline__avatar .profile-mark {
+  width: 16px;
+  height: 16px;
+}
+
+.editor-outline__avatar .profile-mark::before {
+  inset: 3px;
+}
+
 .editor-outline__author div {
   display: grid;
 }
@@ -234,55 +250,26 @@
   transform: rotate(34deg);
 }
 
-.editor-outline__cover strong,
-.editor-outline__cover small {
-  position: relative;
-  z-index: 1;
-}
-
-.editor-outline__cover strong {
-  display: -webkit-box;
-  overflow: hidden;
-  font-family: 'Songti SC', 'STSong', serif;
-  font-size: 1.05rem;
-  line-height: 1.35;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-.editor-outline__cover small {
-  margin-top: 6px;
-  color: rgb(255 255 255 / 70%);
-  font-size: 0.65rem;
-}
-
-.editor-outline__nav {
-  display: grid;
-  padding: 8px;
-}
-
-.editor-outline__nav button {
-  display: grid;
-  grid-template-columns: 30px 1fr;
-  min-height: 40px;
-  align-items: center;
-  border: 0;
-  border-radius: 6px;
-  color: #666770;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-}
-
-.editor-outline__nav button:hover {
-  color: #5868b2;
-  background: #f5f5f9;
-}
-
-.editor-outline__nav button span {
-  color: #aaaab1;
-  font-size: 0.63rem;
-}
+.editor-outline__nav { padding: 16px 12px; border-top: 1px solid #eeeeef; }
+.editor-outline__label { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding-inline: 4px; }
+.editor-outline__label strong { font-size: .78rem; font-weight: 600; }
+.editor-outline__label > span { color: #92929a; font-size: .63rem; }
+.editor-outline__article { display: grid; margin: 16px 4px 0; padding-bottom: 16px; border-bottom: 1px solid #eeeeef; }
+.editor-outline__article > strong { color: #55565e; font-family: 'Songti SC', 'STSong', serif; font-size: 1rem; font-weight: 600; line-height: 1.5; overflow-wrap: anywhere; }
+.editor-outline__empty { margin: 12px 4px 0; color: #92929a; font-size: .72rem; line-height: 1.8; }
+.editor-outline__list { max-height: 36vh; overflow-y: auto; list-style: none; margin: 12px 0 0; padding: 0; }
+.editor-outline__nav button { display: flex; width: 100%; min-height: 40px; align-items: baseline; gap: 8px; padding: 10px 12px; border: 0; border-radius: 6px; color: #666770; background: transparent; text-align: left; cursor: pointer; }
+.editor-outline__nav button:hover { color: #5868b2; background: #f5f5f9; }
+.editor-outline__nav button:focus-visible,
+.editor-outline__cover:focus-visible { outline: 2px solid #5868b2; outline-offset: -2px; }
+.editor-outline__number { flex: 0 0 auto; color: #92929a; font-size: .63rem; }
+.editor-outline__text { min-width: 0; font-size: .75rem; line-height: 1.65; overflow-wrap: anywhere; }
+.editor-cover--empty { min-height: 190px; background: #f5f5fa; color: #535c89; }
+.editor-cover--empty::after { display: none; }
+.editor-cover--empty .editor-outline__cover-art { display: none; }
+.editor-cover--empty .editor-cover__prompt { top: 12px; background: white; border-color: #d9dced; }
+.editor-cover__invitation { position: relative; display: grid; justify-items: start; gap: 8px; margin: 32px 0 0; font-size: .8rem; font-weight: 600; }
+.editor-cover__description { color: #92929a; font-size: .68rem; font-weight: 400; }
 
 .editor-outline__new {
   display: flex;
@@ -579,32 +566,45 @@
   color: #85858d;
 }
 
-.editor-setting-status {
-  display: flex;
-  align-items: flex-start;
-  gap: 11px;
-  padding: 12px;
-  border-radius: 7px;
-  background: #f7f7f9;
-}
-
-.editor-setting-status > .editor-status-dot {
-  margin-top: 5px;
-}
-
-.editor-setting-status div {
+.editor-setting-choices {
   display: grid;
-  gap: 3px;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
 }
 
-.editor-setting-status strong {
-  color: #56575f;
-  font-size: 0.72rem;
+.editor-setting-choices button {
+  min-height: 40px;
+  padding: 0 10px;
+  border: 1px solid #e1e1e4;
+  border-radius: 7px;
+  color: #74747d;
+  background: #fff;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
 }
 
-.editor-setting-status div span {
-  color: #9898a0;
-  font-size: 0.63rem;
+.editor-setting-choices button:hover {
+  border-color: #b9bce0;
+  color: #55565f;
+}
+
+.editor-setting-choices button[aria-pressed='true'] {
+  border-color: #5868b2;
+  color: #5868b2;
+  background: #f4f5fc;
+  font-weight: 600;
+}
+
+.editor-setting-choices button:focus-visible {
+  outline: 2px solid #5868b2;
+  outline-offset: 2px;
+}
+
+.editor-setting-hint {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.75rem;
   line-height: 1.55;
 }
 
@@ -652,7 +652,6 @@
   }
 
   .editor-outline__author,
-  .editor-outline__nav,
   .editor-outline__hint {
     display: none;
   }
@@ -706,6 +705,10 @@
 }
 
 @media (max-width: 560px) {
+  .editor-commandbar__visibility {
+    display: none;
+  }
+
   .editor-commandbar__identity div span {
     display: none;
   }

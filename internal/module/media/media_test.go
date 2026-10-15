@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -151,5 +152,59 @@ func TestReadAfterReopeningStorage(t *testing.T) {
 	actual, err := io.ReadAll(file.Content)
 	if err != nil || !bytes.Equal(actual, data) {
 		t.Fatal("stored image was not preserved")
+	}
+}
+
+func TestDeleteURLOnlyTouchesStoreFiles(t *testing.T) {
+	directory := t.TempDir()
+	storage, err := NewLocalStorage(directory)
+	if err != nil {
+		t.Fatal(err)
+	}
+	url, err := NewService(storage).Upload(context.Background(), true, pngData(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !storage.ValidURL(url) {
+		t.Fatalf("stored url %q rejected", url)
+	}
+	if err := storage.DeleteURL(context.Background(), url); err != nil {
+		t.Fatal(err)
+	}
+	// 文件已不存在时重复清理仍应成功。
+	if err := storage.DeleteURL(context.Background(), url); err != nil {
+		t.Fatal(err)
+	}
+	if entries, _ := os.ReadDir(directory); len(entries) != 0 {
+		t.Fatalf("delete left %d files", len(entries))
+	}
+
+	// 媒体库之外的文件不能被清理请求删除。
+	outside := filepath.Join(filepath.Dir(directory), "outside.png")
+	if err := os.WriteFile(outside, []byte("keep"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, value := range []string{
+		"",
+		URLPrefix + "../outside.png",
+		URLPrefix + "0123456789abcdef0123456789abcdef.svg",
+		"https://example.com/avatar.png",
+		outside,
+	} {
+		if storage.ValidURL(value) {
+			t.Fatalf("accepted %q", value)
+		}
+		if err := storage.DeleteURL(context.Background(), value); !errors.Is(err, ErrNotStoreURL) {
+			t.Fatalf("delete %q err=%v", value, err)
+		}
+	}
+	if _, err := os.Stat(outside); err != nil {
+		t.Fatalf("file outside the store was removed: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := storage.DeleteURL(ctx, url); !errors.Is(err, context.Canceled) {
+		t.Fatal(err)
 	}
 }

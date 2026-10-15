@@ -1,4 +1,6 @@
 import { useEffect, useMemo } from 'react'
+import { LazyMotion, useReducedMotion } from 'motion/react'
+import * as motion from 'motion/react-m'
 import { Link, useSearchParams } from 'react-router'
 import { useAuthStore, usePostStore, useTagStore } from '@/stores'
 import PostCard from '@/components/PostCard'
@@ -10,6 +12,11 @@ import ErrorMessage from '@/components/ErrorMessage'
 import TagBadge from '@/components/TagBadge'
 import StatusBadge from '@/components/StatusBadge'
 import useArticleReveal from '@/hooks/useArticleReveal'
+import { ArrowDown, Books, Calendar, Clock, Envelope, GithubLogo, Rss, Sparkle, X } from '@/components/blogIcons'
+import RevealText from '@/components/home/RevealText'
+import './HomePage.css'
+
+const loadMotionFeatures = () => import('@/components/headerMotionFeatures').then((module) => module.default)
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString('zh-CN', {
@@ -24,6 +31,14 @@ function readingMinutes(content: string) {
 }
 
 export default function PostListPage() {
+  const reducedMotion = useReducedMotion()
+  const entrance = (delay: number) => ({
+    initial: { opacity: 1, transform: 'none' },
+    animate: reducedMotion ? { opacity: 1, transform: 'none' } : {
+      opacity: [0.65, 1], transform: ['translateY(8px)', 'translateY(0px)'],
+    },
+    transition: { duration: reducedMotion ? 0 : 0.45, delay: reducedMotion ? 0 : delay, ease: [0.23, 1, 0.32, 1] as const },
+  })
   const featuredRef = useArticleReveal()
   const [searchParams, setSearchParams] = useSearchParams()
   const page = Number(searchParams.get('page')) || 1
@@ -39,7 +54,7 @@ export default function PostListPage() {
   }, [fetchTags])
 
   useEffect(() => {
-    fetchPosts({ page, per_page: 10, tag: activeTag })
+    fetchPosts({ page, per_page: 10, tag: activeTag, status: 'published', kind: 'article' })
   }, [page, activeTag, fetchPosts])
 
   const visiblePosts = useMemo(() => {
@@ -58,7 +73,7 @@ export default function PostListPage() {
       next.set('page', String(nextPage))
       return next
     })
-    document.querySelector('#articles')?.scrollIntoView({ behavior: 'smooth' })
+    document.querySelector('#articles')?.scrollIntoView({ behavior: reducedMotion ? 'instant' : 'smooth' })
   }
 
   function clearFilters() {
@@ -66,20 +81,23 @@ export default function PostListPage() {
   }
 
   return (
+    <LazyMotion features={loadMotionFeatures} strict>
     <div>
       <section id="home" className="home-hero scroll-mt-[var(--header-height)]" aria-labelledby="home-title">
         <div className="home-hero__glow" aria-hidden="true" />
-        <div className="relative z-10 mx-auto flex min-h-[calc(100svh-var(--header-height))] max-w-[1000px] flex-col items-center justify-center px-5 py-20 text-center sm:px-8">
-          <p className="mb-5 text-sm font-medium tracking-[0.2em] text-primary sm:text-base">你好，欢迎来到逃跑计划。</p>
-          <h1 id="home-title" className="max-w-[900px] text-[clamp(3.2rem,8.5vw,7rem)] font-semibold leading-[0.98] tracking-[-0.07em] text-[#111014]">
-            <br className="sm:hidden" />我是 bba70。
+        <div className="home-hero__inner">
+          <p className="home-hero__welcome">你好，欢迎来到逃跑计划。</p>
+          <h1 id="home-title" className="home-hero__title" aria-label="我是 bba70。">
+            <span className="home-hero__intro" aria-hidden="true"><RevealText text="我是" /></span>
+            <span className="home-hero__name" aria-hidden="true"><RevealText text="bba70。" /></span>
           </h1>
-          <p className="mt-7 max-w-2xl text-base leading-8 text-[#65636b] sm:mt-9 sm:text-xl sm:leading-9">
-            一名独立开发者与写作者，在这里记录代码、产品与生活。
-          </p>
+          <motion.p {...entrance(0.08)} className="home-hero__description">
+            <span>一名独立开发者与写作者，</span>
+            <span>在这里记录代码、产品与生活。</span>
+          </motion.p>
 
-          <div className="mt-9 flex min-h-7 max-w-full items-center gap-2 text-sm text-[#77747e] sm:mt-10">
-            <span className="shrink-0 text-primary" aria-hidden="true">✦</span>
+          <motion.div {...entrance(0.16)} className="home-hero__latest">
+            <Sparkle size={18} weight="duotone" className="shrink-0 text-primary" aria-hidden="true" />
             {featuredPost ? (
               <Link to={`/posts/${featuredPost.slug}`} className="truncate underline-offset-4 transition-colors hover:text-primary hover:underline">
                 最新文章：{featuredPost.title}
@@ -87,17 +105,17 @@ export default function PostListPage() {
             ) : (
               <span>{loading ? '正在整理最新的记录…' : '思考不止，记录不断。'}</span>
             )}
-          </div>
+          </motion.div>
 
-          <div className="mt-9 flex items-center gap-3" aria-label="联系方式">
-            <span className="social-button" title="GitHub 链接待配置">
-              <svg className="h-5 w-5" aria-hidden="true"><use href="/icons.svg#github-icon" /></svg>
+          <div className="home-hero__socials" aria-label="联系方式">
+            <span className="social-button" title="GitHub 链接待配置" aria-label="GitHub 链接待配置">
+              <GithubLogo size={20} aria-hidden="true" />
             </span>
-            <span className="social-button text-[15px] font-semibold" title="邮箱待配置" aria-label="邮箱待配置">@</span>
-            <span className="social-button text-lg" title="RSS 待配置" aria-label="RSS 待配置">◔</span>
+            <span className="social-button" title="邮箱待配置" aria-label="邮箱待配置"><Envelope size={20} aria-hidden="true" /></span>
+            <span className="social-button" title="RSS 待配置" aria-label="RSS 待配置"><Rss size={20} aria-hidden="true" /></span>
           </div>
 
-          <a href="#articles" className="hero-scroll" aria-label="向下查看文章"><span aria-hidden="true">↓</span></a>
+          <a href="#articles" className="hero-scroll" aria-label="向下查看文章"><ArrowDown size={20} aria-hidden="true" /></a>
         </div>
       </section>
 
@@ -107,16 +125,17 @@ export default function PostListPage() {
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start xl:gap-12">
         <div className="min-w-0">
           <section aria-labelledby="featured-title">
-            <h1 id="featured-title" className="mb-4 text-lg font-semibold tracking-tight">
+            <h2 id="featured-title" className="mb-4 flex items-center gap-2 text-lg font-semibold tracking-tight">
+              <Sparkle size={24} weight="duotone" className="shrink-0 text-primary" aria-hidden="true" />
               {activeTag || query ? '筛选结果' : '本周精选'}
-            </h1>
+            </h2>
 
             {loading && posts.length === 0 ? (
               <LoadingSpinner />
             ) : error ? (
-              <ErrorMessage message={error} onRetry={() => fetchPosts({ page, per_page: 10, tag: activeTag })} />
+              <ErrorMessage message={error} onRetry={() => fetchPosts({ page, per_page: 10, tag: activeTag, status: 'published', kind: 'article' })} />
             ) : featuredPost ? (
-              <article ref={featuredRef} className="featured-article grid overflow-hidden rounded-[14px] border border-line bg-white md:grid-cols-[1.1fr_0.95fr]">
+              <article ref={featuredRef} className="home-featured featured-article grid overflow-hidden rounded-[14px] border border-line bg-white p-4 sm:p-5 md:grid-cols-[1.1fr_0.95fr]">
                 <PostCover src={featuredPost.cover_url} className="feature-art featured-post-cover" fallback={<div className="feature-art" aria-hidden="true">
                   <span className="absolute top-[14%] left-[7%] z-10 text-xs font-medium text-primary">写作</span>
                   <span className="absolute top-[22%] left-[7%] z-10 max-w-28 text-sm leading-7 text-muted">是重组思考的隐形工程。</span>
@@ -142,9 +161,9 @@ export default function PostListPage() {
                   </div>
 
                   <div className="mt-8 flex flex-wrap items-center gap-3 text-xs text-muted">
-                    <time>{formatDate(featuredPost.published_at ?? featuredPost.created_at)}</time>
+                    <time className="inline-flex items-center gap-1.5"><Calendar size={14} aria-hidden="true" />{formatDate(featuredPost.published_at ?? featuredPost.created_at)}</time>
                     <span aria-hidden="true">·</span>
-                    <span>{readingMinutes(featuredPost.content)} 分钟</span>
+                    <span className="inline-flex items-center gap-1.5"><Clock size={14} aria-hidden="true" />{readingMinutes(featuredPost.content)} 分钟</span>
                     <div className="ml-auto flex flex-wrap gap-1.5">
                       {featuredPost.tags.slice(0, 3).map((tag) => <TagBadge key={tag} name={tag} />)}
                     </div>
@@ -166,28 +185,13 @@ export default function PostListPage() {
 
           <section id="articles" className="scroll-mt-28 pt-9" aria-labelledby="all-posts-title">
             <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <h2 id="all-posts-title" className="text-lg font-semibold tracking-tight">所有文章</h2>
+              <h2 id="all-posts-title" className="flex items-center gap-2 text-lg font-semibold tracking-tight"><Books size={24} weight="duotone" className="shrink-0 text-primary" aria-hidden="true" />所有文章</h2>
               {(activeTag || query) && (
-                <button type="button" onClick={clearFilters} className="self-start text-sm text-primary hover:text-primary-dark">
-                  清除筛选
+                <button type="button" onClick={clearFilters} className="inline-flex min-h-11 items-center gap-1.5 self-start text-sm text-primary hover:text-primary-dark">
+                  <X size={15} aria-hidden="true" />清除筛选
                 </button>
               )}
             </div>
-
-            {tags.length > 0 && (
-              <div className="mb-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={clearFilters}
-                  className={`inline-flex min-h-7 items-center rounded-lg border px-2.5 py-1 text-xs font-medium transition-colors ${
-                    !activeTag ? 'border-primary bg-primary text-white' : 'border-line bg-white text-muted hover:text-ink'
-                  }`}
-                >
-                  全部
-                </button>
-                {tags.slice(0, 8).map((tag) => <TagBadge key={tag.id} name={tag.name} active={activeTag === tag.name} />)}
-              </div>
-            )}
 
             {remainingPosts.length > 0 ? (
               <div className="grid gap-4">
@@ -212,5 +216,6 @@ export default function PostListPage() {
       </div>
       </div>
     </div>
+    </LazyMotion>
   )
 }

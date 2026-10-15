@@ -34,20 +34,18 @@ func (h *Handler) ListPosts(w http.ResponseWriter, r *http.Request) {
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
 	perPage, _ := strconv.Atoi(r.URL.Query().Get("per_page"))
 	status := r.URL.Query().Get("status")
+	kind := r.URL.Query().Get("kind")
 	tag := r.URL.Query().Get("tag")
 
 	posts, total, err := h.svc.ListPosts(r.Context(), viewerFrom(r), ListPostsReq{
 		Page:    page,
 		PerPage: perPage,
 		Status:  status,
+		Kind:    kind,
 		Tag:     tag,
 	})
-	if errors.Is(err, ErrUnauthorized) {
-		response.Error(w, http.StatusUnauthorized, response.CodeUnauthorized, "authentication required")
-		return
-	}
 	if err != nil {
-		h.internalError(w, r, err)
+		h.writeServiceError(w, r, err)
 		return
 	}
 	if posts == nil {
@@ -123,9 +121,9 @@ func (h *Handler) DeletePost(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ListTags(w http.ResponseWriter, r *http.Request) {
-	tags, err := h.svc.ListTags(r.Context(), viewerFrom(r))
+	tags, err := h.svc.ListTags(r.Context(), viewerFrom(r), r.URL.Query().Get("kind"))
 	if err != nil {
-		h.internalError(w, r, err)
+		h.writeServiceError(w, r, err)
 		return
 	}
 	if tags == nil {

@@ -14,6 +14,12 @@ const (
 	StatusPublished = "published"
 )
 
+// 内容类型。
+const (
+	KindArticle = "article"
+	KindEssay   = "essay"
+)
+
 // Viewer 描述当前请求者的访问能力，与 HTTP 细节解耦。
 // 由 handler 从认证上下文中映射后传入 service。
 type Viewer struct {
@@ -27,6 +33,7 @@ const (
 	maxTitleLen   = 255
 	maxSlugLen    = 255
 	maxSummaryLen = 500
+	maxTagNameLen = 100
 )
 
 type Post struct {
@@ -37,6 +44,7 @@ type Post struct {
 	Summary     string     `json:"summary"`
 	CoverURL    string     `json:"cover_url"`
 	Status      string     `json:"status"`
+	Kind        string     `json:"kind"`
 	Tags        []string   `json:"tags"`
 	CreatedAt   time.Time  `json:"created_at"`
 	UpdatedAt   time.Time  `json:"updated_at"`
@@ -48,6 +56,42 @@ type Tag struct {
 	Name string `json:"name"`
 }
 
+func normalizeTagName(name string) (string, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "", validationErrorf("标签名称不能为空")
+	}
+	if utf8.RuneCountInString(name) > maxTagNameLen {
+		return "", validationErrorf("标签名称不能超过 %d 个字符", maxTagNameLen)
+	}
+	for _, character := range name {
+		if character < 32 || character == 127 {
+			return "", validationErrorf("标签名称不能包含控制字符")
+		}
+	}
+	return name, nil
+}
+
+// normalizePostTags 校验当前文章的标签，保留 nil 与显式空列表的区别。
+func normalizePostTags(names []string) ([]string, error) {
+	if names == nil {
+		return nil, nil
+	}
+	result := make([]string, 0, len(names))
+	seen := make(map[string]bool, len(names))
+	for _, name := range names {
+		normalized, err := normalizeTagName(name)
+		if err != nil {
+			return nil, err
+		}
+		if !seen[normalized] {
+			result = append(result, normalized)
+			seen[normalized] = true
+		}
+	}
+	return result, nil
+}
+
 type CreatePostReq struct {
 	Title    string   `json:"title"`
 	Slug     string   `json:"slug"`
@@ -55,6 +99,7 @@ type CreatePostReq struct {
 	Summary  string   `json:"summary"`
 	CoverURL string   `json:"cover_url"`
 	Status   string   `json:"status"`
+	Kind     string   `json:"kind"`
 	Tags     []string `json:"tags"`
 }
 
@@ -65,6 +110,7 @@ type UpdatePostReq struct {
 	Summary  *string  `json:"summary,omitempty"`
 	CoverURL *string  `json:"cover_url,omitempty"`
 	Status   *string  `json:"status,omitempty"`
+	Kind     *string  `json:"kind,omitempty"`
 	Tags     []string `json:"tags,omitempty"`
 }
 
@@ -72,6 +118,7 @@ type ListPostsReq struct {
 	Page    int    `json:"page"`
 	PerPage int    `json:"per_page"`
 	Status  string `json:"status"`
+	Kind    string `json:"kind"`
 	Tag     string `json:"tag"`
 }
 
@@ -89,6 +136,13 @@ func validationErrorf(format string, args ...interface{}) error {
 func checkStatus(status string) error {
 	if status != StatusDraft && status != StatusPublished {
 		return validationErrorf("invalid status %q, must be %q or %q", status, StatusDraft, StatusPublished)
+	}
+	return nil
+}
+
+func checkKind(kind string) error {
+	if kind != KindArticle && kind != KindEssay {
+		return validationErrorf("invalid kind %q, must be %q or %q", kind, KindArticle, KindEssay)
 	}
 	return nil
 }
@@ -114,6 +168,11 @@ func (r CreatePostReq) Validate() error {
 	}
 	if r.Status != "" {
 		if err := checkStatus(r.Status); err != nil {
+			return err
+		}
+	}
+	if r.Kind != "" {
+		if err := checkKind(r.Kind); err != nil {
 			return err
 		}
 	}
@@ -147,6 +206,11 @@ func (r UpdatePostReq) Validate() error {
 	}
 	if r.Status != nil {
 		if err := checkStatus(*r.Status); err != nil {
+			return err
+		}
+	}
+	if r.Kind != nil {
+		if err := checkKind(*r.Kind); err != nil {
 			return err
 		}
 	}

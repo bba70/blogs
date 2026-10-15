@@ -28,6 +28,12 @@ type authzEnv struct {
 // 写路由挂 RequireOwner，读路由由 service 依据身份决定可见范围。
 func newAuthzEnv(t *testing.T) *authzEnv {
 	t.Helper()
+	return newAuthzEnvWithStore(t, seededStore())
+}
+
+// newAuthzEnvWithStore 允许指定种子数据，用于覆盖可见性矩阵。
+func newAuthzEnvWithStore(t *testing.T, store *fakeStore) *authzEnv {
+	t.Helper()
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(authzTestPassword), bcrypt.MinCost)
 	if err != nil {
@@ -38,7 +44,6 @@ func newAuthzEnv(t *testing.T) *authzEnv {
 		t.Fatalf("auth.NewService: %v", err)
 	}
 
-	store := seededStore()
 	mw := auth.NewMiddleware(authSvc)
 
 	r := chi.NewRouter()
@@ -112,6 +117,14 @@ func namesFromTagsBody(t *testing.T, body string) []string {
 	return names
 }
 
+type postEnvelope struct {
+	Data struct {
+		Slug   string `json:"slug"`
+		Status string `json:"status"`
+		Kind   string `json:"kind"`
+	} `json:"data"`
+}
+
 func TestListPostsAuthorization(t *testing.T) {
 	env := newAuthzEnv(t)
 
@@ -163,6 +176,37 @@ func TestListPostsAuthorization(t *testing.T) {
 	})
 }
 
+// 访客只能浏览已发布文章，不能读取随笔、草稿或管理范围。
+func TestListPostsAnonymousScopeBoundary(t *testing.T) {
+	env := newAuthzEnvWithStore(t, seededContentStore())
+
+	for _, target := range []string{
+		"/api/v1/posts?kind=essay",
+		"/api/v1/posts?kind=essay&status=published",
+		"/api/v1/posts?kind=essay&tag=%E5%B8%83%E5%B1%80%E6%B5%8B%E8%AF%95",
+		"/api/v1/posts?kind=essay&status=all",
+		"/api/v1/posts?kind=essay&status=draft",
+		"/api/v1/posts?kind=article&status=all",
+	} {
+		if rec := env.do(t, http.MethodGet, target, "", ""); rec.Code != http.StatusUnauthorized {
+			t.Errorf("%s = %d, want 401", target, rec.Code)
+		}
+	}
+
+	for _, kind := range []string{KindArticle} {
+		rec := env.do(t, http.MethodGet, "/api/v1/posts?kind="+kind, "", "")
+		if rec.Code != http.StatusOK {
+			t.Fatalf("anonymous %s list = %d, body = %s", kind, rec.Code, rec.Body.String())
+		}
+		if slugs := slugsFromListBody(t, rec.Body.String()); len(slugs) != 1 || slugs[0] != "public-"+kind {
+			t.Errorf("anonymous %s slugs = %v, want [public-%s]", kind, slugs, kind)
+		}
+	}
+	if rec := env.do(t, http.MethodGet, "/api/v1/posts?kind=invalid", "", ""); rec.Code != http.StatusBadRequest {
+		t.Errorf("invalid kind status = %d, want 400", rec.Code)
+	}
+}
+
 func TestGetPostAuthorization(t *testing.T) {
 	env := newAuthzEnv(t)
 
@@ -191,6 +235,36 @@ func TestGetPostAuthorization(t *testing.T) {
 				t.Errorf("status = %d, body = %s, want %d", rec.Code, rec.Body.String(), tc.wantStatus)
 			}
 		})
+	}
+}
+
+// 随笔无论是否发布都仅作者可见，匿名详情统一返回 404。
+func TestGetPostRouteContentStatusMatrix(t *testing.T) {
+	env := newAuthzEnvWithStore(t, seededContentStore())
+
+	cases := []struct {
+		slug       string
+		owner      bool
+		wantStatus int
+	}{
+		{"public-article", false, http.StatusOK},
+		{"draft-article", false, http.StatusNotFound},
+		{"public-essay", false, http.StatusNotFound},
+		{"draft-essay", false, http.StatusNotFound},
+		{"draft-article", true, http.StatusOK},
+		{"public-essay", true, http.StatusOK},
+		{"draft-essay", true, http.StatusOK},
+	}
+
+	for _, tc := range cases {
+		cookie := ""
+		if tc.owner {
+			cookie = env.ownerCookie(t)
+		}
+		rec := env.do(t, http.MethodGet, "/api/v1/posts/"+tc.slug, "", cookie)
+		if rec.Code != tc.wantStatus {
+			t.Errorf("owner=%v slug=%s status = %d, want %d", tc.owner, tc.slug, rec.Code, tc.wantStatus)
+		}
 	}
 }
 
@@ -231,6 +305,63 @@ func TestWriteRoutesRequireOwner(t *testing.T) {
 	})
 }
 
+func TestCreatePostKindAndPublicRead(t *testing.T) {
+	env := newAuthzEnv(t)
+	cookie := env.ownerCookie(t)
+
+	t.Run("defaults to article and draft", func(t *testing.T) {
+		rec := env.do(t, http.MethodPost, "/api/v1/posts",
+			`{"title":"默认","slug":"defaults","content":"正文","status":"draft"}`, cookie)
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("create = %d, body = %s", rec.Code, rec.Body.String())
+		}
+		var envelope postEnvelope
+		if err := json.Unmarshal(rec.Body.Bytes(), &envelope); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if envelope.Data.Kind != KindArticle || envelope.Data.Status != StatusDraft {
+			t.Errorf("defaults kind=%q status=%q, want article/draft", envelope.Data.Kind, envelope.Data.Status)
+		}
+	})
+
+	t.Run("published essay remains owner-only", func(t *testing.T) {
+		rec := env.do(t, http.MethodPost, "/api/v1/posts",
+			`{"title":"随笔","slug":"essay-1","content":"正文","status":"published","kind":"essay"}`, cookie)
+		if rec.Code != http.StatusCreated {
+			t.Fatalf("create = %d, body = %s", rec.Code, rec.Body.String())
+		}
+		var envelope postEnvelope
+		if err := json.Unmarshal(rec.Body.Bytes(), &envelope); err != nil {
+			t.Fatalf("decode: %v", err)
+		}
+		if envelope.Data.Kind != KindEssay || envelope.Data.Status != StatusPublished {
+			t.Errorf("created kind=%q status=%q, want essay/published", envelope.Data.Kind, envelope.Data.Status)
+		}
+		if strings.Contains(rec.Body.String(), `"visibility"`) {
+			t.Error("obsolete visibility field must not appear in the response")
+		}
+		rec = env.do(t, http.MethodGet, "/api/v1/posts/essay-1", "", "")
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("anonymous published essay read = %d, want 404", rec.Code)
+		}
+		rec = env.do(t, http.MethodGet, "/api/v1/posts/essay-1", "", cookie)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("owner published essay read = %d, want 200", rec.Code)
+		}
+	})
+
+	t.Run("rejects unknown enum values", func(t *testing.T) {
+		for _, body := range []string{
+			`{"title":"x","slug":"bad-kind","kind":"banana"}`,
+			`{"title":"x","slug":"bad-status","status":"secret"}`,
+		} {
+			if rec := env.do(t, http.MethodPost, "/api/v1/posts", body, cookie); rec.Code != http.StatusBadRequest {
+				t.Errorf("body=%s status = %d, want 400", body, rec.Code)
+			}
+		}
+	})
+}
+
 func TestTagsVisibility(t *testing.T) {
 	env := newAuthzEnv(t)
 
@@ -248,5 +379,43 @@ func TestTagsVisibility(t *testing.T) {
 	}
 	if names := namesFromTagsBody(t, rec.Body.String()); len(names) != 2 {
 		t.Errorf("owner tags = %v, want all tags", names)
+	}
+}
+
+func TestTagsKindFilterAuthorization(t *testing.T) {
+	store := newFakeStore()
+	store.tags = []Tag{{ID: 1, Name: "article-tag"}, {ID: 2, Name: "essay-draft-tag"}, {ID: 3, Name: "essay-tag"}}
+	store.seedPost(Post{Slug: "article", Kind: KindArticle, Status: StatusPublished, Tags: []string{"article-tag"}})
+	store.seedPost(Post{Slug: "essay-draft", Kind: KindEssay, Status: StatusDraft, Tags: []string{"essay-draft-tag"}})
+	store.seedPost(Post{Slug: "essay", Kind: KindEssay, Status: StatusPublished, Tags: []string{"essay-tag"}})
+	env := newAuthzEnvWithStore(t, store)
+
+	rec := env.do(t, http.MethodGet, "/api/v1/tags?kind=essay", "", env.ownerCookie(t))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("owner essay tags status = %d, body = %s", rec.Code, rec.Body.String())
+	}
+	if names := namesFromTagsBody(t, rec.Body.String()); len(names) != 2 || names[0] != "essay-draft-tag" || names[1] != "essay-tag" {
+		t.Fatalf("owner essay tags = %v, want draft and published essay tags", names)
+	}
+	rec = env.do(t, http.MethodGet, "/api/v1/tags?kind=essay", "", "")
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("anonymous essay tags status = %d, want 401", rec.Code)
+	}
+	if strings.Contains(rec.Body.String(), "essay-tag") || strings.Contains(rec.Body.String(), "essay-draft-tag") {
+		t.Fatal("anonymous essay tag request leaked tags")
+	}
+	for _, tc := range []struct {
+		target string
+		status int
+	}{
+		{"/api/v1/tags?kind=invalid", http.StatusBadRequest},
+	} {
+		rec := env.do(t, http.MethodGet, tc.target, "", "")
+		if rec.Code != tc.status {
+			t.Errorf("%s status = %d, want %d", tc.target, rec.Code, tc.status)
+		}
+		if strings.Contains(rec.Body.String(), "essay-tag") {
+			t.Errorf("%s unexpectedly returned tags for invalid kind", tc.target)
+		}
 	}
 }

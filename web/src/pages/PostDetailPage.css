@@ -98,6 +98,15 @@
   padding-block: 28px 46px;
 }
 
+.post-detail-hero__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
 .post-detail-back {
   display: inline-flex;
   width: fit-content;
@@ -117,6 +126,22 @@
   border-color: rgb(255 255 255 / 50%);
   color: #fff;
   background: rgb(27 26 35 / 28%);
+}
+
+.post-detail-back:focus-visible,
+.post-detail-footer a:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+
+@media (pointer: coarse) {
+  .post-detail-back,
+  .post-detail-footer a {
+    display: inline-flex;
+    min-width: 44px;
+    min-height: 44px;
+    align-items: center;
+  }
 }
 
 .post-detail-hero__content {
@@ -500,4 +525,37 @@
   .post-detail-back {
     transition: none;
   }
+}
+
+/* Essays share the reader but use a quieter, single-column page. */
+.post-detail-page--essay { min-height: calc(100vh - var(--header-height)); background: var(--color-canvas); }
+.post-detail-page--essay .post-detail-shell { width: min(100% - 64px, 760px); }
+.post-detail-page--essay .post-detail-hero { min-height: 0; color: var(--color-ink); background: var(--color-canvas); border-bottom: 1px solid var(--color-line); }
+.post-detail-page--essay .post-detail-hero::before,
+.post-detail-page--essay .post-detail-hero__art,
+.post-detail-page--essay .post-detail-hero__shade,
+.post-detail-page--essay .post-detail-cover { display: none; }
+.post-detail-page--essay .post-detail-hero__inner { min-height: 0; gap: 32px; padding-block: 30px 36px; }
+.post-detail-page--essay .post-detail-back { padding: 8px 0; color: var(--color-muted); background: none; border: 0; border-radius: 0; backdrop-filter: none; }
+.post-detail-page--essay .post-detail-back:hover { color: var(--color-primary); }
+.post-detail-page--essay .post-detail-edit { padding-inline: 14px; border: 1px solid var(--color-line); border-radius: 10px; color: var(--color-primary); background: var(--color-canvas); }
+.post-detail-page--essay .post-detail-edit:hover { background: var(--color-soft); }
+.post-detail-page--essay .post-detail-hero h1 { color: var(--color-ink); font-family: inherit; font-size: clamp(2rem, 4vw, 2.7rem); line-height: 1.4; text-shadow: none; overflow-wrap: anywhere; }
+.post-detail-page--essay .post-detail-hero__tags a,
+.post-detail-page--essay .post-detail-hero__draft { padding: 3px 8px; color: var(--color-primary); background: var(--color-soft); border: 0; border-radius: 4px; font-size: 12px; overflow-wrap: anywhere; }
+.post-detail-page--essay .post-detail-hero__summary,
+.post-detail-page--essay .post-detail-hero__meta { color: var(--color-muted); }
+.post-detail-page--essay .post-detail-hero__summary { display: block; }
+.post-detail-page--essay .post-detail-layout { display: block; padding-block: 32px 56px; }
+.post-detail-page--essay .post-detail-content-card { padding: 0; border: 0; border-radius: 0; box-shadow: none; }
+.post-detail-page--essay .post-detail-markdown .prose { color: var(--color-ink); }
+.post-detail-page--essay .post-detail-markdown .prose h2 { border: 0; padding-bottom: 0; }
+.post-detail-page--essay .post-detail-markdown .prose h2::before { content: none; }
+.post-detail-page--essay .post-detail-markdown .prose blockquote { background: var(--color-soft); }
+
+@media (max-width: 600px) {
+  .post-detail-page--essay .post-detail-shell { width: calc(100% - 32px); }
+  .post-detail-page--essay .post-detail-hero__inner { gap: 22px; padding-block: 22px 28px; }
+  .post-detail-page--essay .post-detail-hero h1 { font-size: 28px; }
+  .post-detail-page--essay .post-detail-layout { padding-block: 24px 44px; }
 }

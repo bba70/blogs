@@ -1,4 +1,5 @@
 export type PostStatus = 'draft' | 'published'
+export type PostKind = 'article' | 'essay'
 
 export interface Post {
   id: number
@@ -8,6 +9,7 @@ export interface Post {
   summary: string
   cover_url: string
   status: PostStatus
+  kind: PostKind
   created_at: string
   updated_at: string
   published_at: string | null
@@ -18,7 +20,8 @@ export interface PostListParams {
   page?: number
   per_page?: number
   tag?: string
-  status?: PostStatus
+  status?: PostStatus | 'all'
+  kind?: PostKind
 }
 
 export interface CreatePostPayload {
@@ -28,6 +31,7 @@ export interface CreatePostPayload {
   summary?: string
   cover_url?: string
   status?: PostStatus
+  kind?: PostKind
   tags?: string[]
 }
 
@@ -38,5 +42,6 @@ export interface UpdatePostPayload {
   summary?: string
   cover_url?: string
   status?: PostStatus
+  kind?: PostKind
   tags?: string[]
 }

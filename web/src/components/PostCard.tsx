@@ -4,6 +4,7 @@ import TagBadge from './TagBadge'
 import StatusBadge from './StatusBadge'
 import PostCover from './PostCover'
 import useArticleReveal from '@/hooks/useArticleReveal'
+import { Calendar, Clock } from './blogIcons'
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString('zh-CN', {
@@ -28,7 +29,7 @@ export default function PostCard({ post, index = 0 }: { post: Post; index?: numb
       <div className="flex min-w-0 flex-1 flex-col gap-3 px-5 py-5 lg:flex-row lg:items-center lg:gap-8 lg:px-7">
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex items-center gap-2 text-xs font-medium text-primary">
-            <span>{post.tags[0] ?? '随笔'}</span>
+            <span>{post.tags[0] ?? '未分类'}</span>
             {post.status === 'draft' && <StatusBadge status={post.status} />}
           </div>
           <Link to={`/posts/${post.slug}`} className="block">
@@ -40,9 +41,9 @@ export default function PostCard({ post, index = 0 }: { post: Post; index?: numb
         </div>
 
         <div className="flex shrink-0 flex-wrap items-center gap-3 text-xs text-muted lg:w-[240px] lg:justify-end">
-          <time>{formatDate(post.published_at ?? post.created_at)}</time>
+          <time className="inline-flex items-center gap-1.5"><Calendar size={14} aria-hidden="true" />{formatDate(post.published_at ?? post.created_at)}</time>
           <span aria-hidden="true">·</span>
-          <span>{readingMinutes(post.content)} 分钟</span>
+          <span className="inline-flex items-center gap-1.5"><Clock size={14} aria-hidden="true" />{readingMinutes(post.content)} 分钟</span>
           <div className="flex w-full flex-wrap gap-1.5 lg:justify-end">
             {post.tags.slice(0, 3).map((tag) => <TagBadge key={tag} name={tag} />)}
           </div>

@@ -1,0 +1,40 @@
+/* 点击迸发粒子：参照被包装的定位元素，从点击位置沿随机角度飞出。 */
+
+.click-spark__particles {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.click-spark__particle {
+  position: absolute;
+  top: var(--spark-y);
+  left: var(--spark-x);
+  width: var(--spark-size);
+  height: var(--spark-size);
+  background: var(--spark-color);
+  border-radius: 999px;
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateX(0);
+  animation: click-spark-burst var(--spark-duration) cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes click-spark-burst {
+  from {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--spark-angle)) translateX(var(--spark-distance));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .click-spark__particle {
+    animation: none;
+    opacity: 0;
+  }
+}

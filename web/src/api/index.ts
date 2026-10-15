@@ -1,4 +1,5 @@
 export { fetchPosts, fetchPost, createPost, updatePost, deletePost } from './posts'
 export { fetchTags } from './tags'
 export { fetchAuthStatus, login, logout } from './auth'
+export { fetchProfile, updateProfileAvatar } from './profile'
 export { ApiError, isApiError } from './client'

@@ -1,14 +1,17 @@
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router'
+import { Link, useLocation, useMatch, useNavigate, useSearchParams } from 'react-router'
 import { AnimatePresence, LayoutGroup, LazyMotion, useIsPresent, useReducedMotion } from 'motion/react'
 import * as motion from 'motion/react-m'
-import { useAuthStore } from '@/stores'
+import { useAuthStore, usePostStore } from '@/stores'
+import { Archive, ArrowUpRight, BookOpen, Hash, Notebook, UserCircle } from './blogIcons'
 
-const navItems = [
-  { label: '文章', to: '/blog', section: 'articles' },
-  { label: '专题', to: '/#topics', section: 'topics' },
-  { label: '归档', to: '/archive', section: 'archive' },
-  { label: '关于', to: '/#about', section: 'about' },
+// section 仅用于首页滚动高亮，指向独立页面的项不参与。
+const allNavItems = [
+  { label: '文章', to: '/blog', section: 'articles', icon: BookOpen },
+  { label: '随笔', to: '/essays', section: undefined, icon: Notebook },
+  { label: '专题', to: '/topics', section: undefined, icon: Hash },
+  { label: '归档', to: '/archive', section: 'archive', icon: Archive },
+  { label: '关于', to: '/#about', section: 'about', icon: UserCircle },
 ]
 
 const loadMotionFeatures = () => import('./headerMotionFeatures').then((module) => module.default)
@@ -41,6 +44,8 @@ function isEditableTarget(target: EventTarget | null) {
 
 export default function Header() {
   const location = useLocation()
+  const postRoute = useMatch('/posts/:slug')
+  const detailIsEssay = usePostStore((state) => Boolean(postRoute && state.currentPost?.slug === postRoute.params.slug && state.currentPost?.kind === 'essay'))
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [searchOpen, setSearchOpen] = useState(Boolean(searchParams.get('q')))
@@ -53,6 +58,7 @@ export default function Header() {
   const searchButtonRef = useRef<HTMLButtonElement>(null)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const { authenticated, logout } = useAuthStore()
+  const navItems = allNavItems.filter((item) => item.to !== '/essays' || authenticated)
 
   useEffect(() => {
     if (searchOpen) searchInputRef.current?.focus()
@@ -81,7 +87,7 @@ export default function Header() {
   useEffect(() => {
     if (location.pathname !== '/') return
 
-    const sections = ['home', ...navItems.map((item) => item.section)]
+    const sections = ['home', ...allNavItems.flatMap((item) => item.section ? [item.section] : [])]
       .map((id) => document.getElementById(id))
       .filter((section): section is HTMLElement => Boolean(section))
 
@@ -114,12 +120,14 @@ export default function Header() {
     navigate('/')
   }
 
-  function isNavItemActive(item: (typeof navItems)[number]) {
+  function isNavItemActive(item: (typeof allNavItems)[number]) {
+    if (item.to === '/topics') return location.pathname === '/topics'
     if (item.to === '/archive') return location.pathname === '/archive'
+    if (item.to === '/essays') return location.pathname === '/essays' || detailIsEssay
     if (item.to === '/blog') {
       return location.pathname === '/blog'
-        || location.pathname.startsWith('/posts/')
-        || (location.pathname === '/' && activeHash === '#articles')
+        || (location.pathname.startsWith('/posts/') && !detailIsEssay)
+        || (location.pathname === '/' && (activeHash === '#articles' || activeHash === '#home'))
     }
 
     return location.pathname === '/' && activeHash === `#${item.section}`
@@ -164,6 +172,7 @@ export default function Header() {
               }
             }}
           >
+            <span className="site-brand__tracks" aria-hidden="true" />
             <span className="site-brand__name">逃跑计划</span>
           </Link>
 
@@ -187,11 +196,11 @@ export default function Header() {
                     onMouseEnter={() => setPreviewNav(item.to)}
                     onFocus={() => setPreviewNav(item.to)}
                     onClick={() => {
-                      setActiveHash(`#${item.section}`)
+                      if (item.section) setActiveHash(`#${item.section}`)
                       setSearchOpen(false)
                     }}
                   >
-                    {item.label}
+                    <item.icon className="site-nav__icon" size={18} weight="duotone" aria-hidden="true" />{item.label}
                     {(previewNav ? previewNav === item.to : active) && (
                       <motion.span
                         className="site-nav__indicator"
@@ -263,13 +272,13 @@ export default function Header() {
               className="mobile-navigation__link"
               aria-current={isNavItemActive(item) ? 'location' : undefined}
               onClick={() => {
-                setActiveHash(`#${item.section}`)
+                if (item.section) setActiveHash(`#${item.section}`)
                 setMenuOpen(false)
               }}
             >
               <span className="mobile-navigation__index" aria-hidden="true">0{index + 1}</span>
-              {item.label}
-              <span aria-hidden="true">↗</span>
+              <span className="mobile-navigation__label"><item.icon size={20} weight="duotone" aria-hidden="true" />{item.label}</span>
+              <ArrowUpRight size={17} aria-hidden="true" />
             </Link>
           ))}
           {authenticated && (

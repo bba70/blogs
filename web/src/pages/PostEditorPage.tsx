@@ -1,4 +1,5 @@
 import { Component, lazy, Suspense, type ReactNode } from 'react'
+import { useParams, useSearchParams } from 'react-router'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ErrorMessage from '@/components/ErrorMessage'
 
@@ -25,10 +26,13 @@ class EditorErrorBoundary extends Component<{ children: ReactNode }, { failed: b
 }
 
 export default function PostEditorPage() {
+  const { slug } = useParams()
+  const [searchParams] = useSearchParams()
+  const editorKey = slug ?? `new-${searchParams.get('kind') === 'essay' ? 'essay' : 'article'}`
   return (
     <EditorErrorBoundary>
       <Suspense fallback={<LoadingSpinner />}>
-        <EditorPage />
+        <EditorPage key={editorKey} />
       </Suspense>
     </EditorErrorBoundary>
   )

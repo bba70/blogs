@@ -21,12 +21,12 @@ var (
 type Store interface {
 	ListPosts(ctx context.Context, req ListPostsReq) ([]Post, int64, error)
 	GetPostBySlug(ctx context.Context, slug string) (*Post, error)
-	GetPublishedPostBySlug(ctx context.Context, slug string) (*Post, error)
+	GetPublicPostBySlug(ctx context.Context, slug string) (*Post, error)
 	CreatePost(ctx context.Context, p *Post) error
 	UpdatePost(ctx context.Context, slug string, p *UpdatePostReq) (*Post, error)
 	DeletePost(ctx context.Context, slug string) error
-	ListTags(ctx context.Context) ([]Tag, error)
-	ListPublicTags(ctx context.Context) ([]Tag, error)
+	ListTags(ctx context.Context, kind string) ([]Tag, error)
+	ListPublicTags(ctx context.Context, kind string) ([]Tag, error)
 	EnsureTags(ctx context.Context, names []string) error
 	SyncPostTags(ctx context.Context, postID int64, tagNames []string) error
 }
@@ -39,8 +39,8 @@ func NewService(repo Store) *Service {
 	return &Service{repo: repo}
 }
 
-// ListPosts 返回文章列表。匿名访问只允许默认或显式 published；
-// 匿名请求 draft、all 等管理状态时返回 ErrUnauthorized。
+// ListPosts 按类型返回内容。访客只能读取已发布文章，随笔仅作者可见。
+// 默认列表为文章；随笔列表显式传入 kind=essay，两种内容不混排。
 func (s *Service) ListPosts(ctx context.Context, viewer Viewer, req ListPostsReq) ([]Post, int64, error) {
 	if req.Page < 1 {
 		req.Page = 1
@@ -49,7 +49,18 @@ func (s *Service) ListPosts(ctx context.Context, viewer Viewer, req ListPostsReq
 		req.PerPage = 10
 	}
 
-	if !viewer.IsOwner && req.Status != "" && req.Status != StatusPublished {
+	if !viewer.IsOwner {
+		if req.Status != "" && req.Status != StatusPublished {
+			return nil, 0, ErrUnauthorized
+		}
+	}
+	if req.Kind == "" {
+		req.Kind = KindArticle
+	}
+	if err := checkKind(req.Kind); err != nil {
+		return nil, 0, err
+	}
+	if !viewer.IsOwner && req.Kind == KindEssay {
 		return nil, 0, ErrUnauthorized
 	}
 
@@ -59,13 +70,18 @@ func (s *Service) ListPosts(ctx context.Context, viewer Viewer, req ListPostsReq
 		req.Status = StatusPublished
 	case StatusAll:
 		req.Status = ""
+	default:
+		if err := checkStatus(req.Status); err != nil {
+			return nil, 0, err
+		}
 	}
 
 	return s.repo.ListPosts(ctx, req)
 }
 
-// GetPost 返回文章详情。匿名读取在 SQL 层限定 status=published，
-// 草稿对匿名调用统一映射为不存在（404），不确认草稿是否存在。
+// GetPost 返回文章详情。
+//
+// 匿名读取在 SQL 层限定已发布文章；随笔和草稿均返回 404。
 func (s *Service) GetPost(ctx context.Context, viewer Viewer, slug string) (*Post, error) {
 	var (
 		p   *Post
@@ -74,7 +90,7 @@ func (s *Service) GetPost(ctx context.Context, viewer Viewer, slug string) (*Pos
 	if viewer.IsOwner {
 		p, err = s.repo.GetPostBySlug(ctx, slug)
 	} else {
-		p, err = s.repo.GetPublishedPostBySlug(ctx, slug)
+		p, err = s.repo.GetPublicPostBySlug(ctx, slug)
 	}
 	if err != nil {
 		return nil, err
@@ -94,8 +110,17 @@ func (s *Service) CreatePost(ctx context.Context, viewer Viewer, req CreatePostR
 		return nil, err
 	}
 
+	tags, err := normalizePostTags(req.Tags)
+	if err != nil {
+		return nil, err
+	}
+	req.Tags = tags
+
 	if req.Status == "" {
 		req.Status = StatusDraft
+	}
+	if req.Kind == "" {
+		req.Kind = KindArticle
 	}
 
 	p := &Post{
@@ -105,6 +130,7 @@ func (s *Service) CreatePost(ctx context.Context, viewer Viewer, req CreatePostR
 		Summary:  req.Summary,
 		CoverURL: req.CoverURL,
 		Status:   req.Status,
+		Kind:     req.Kind,
 		Tags:     req.Tags,
 	}
 
@@ -138,6 +164,12 @@ func (s *Service) UpdatePost(ctx context.Context, viewer Viewer, slug string, re
 		return nil, err
 	}
 
+	tags, err := normalizePostTags(req.Tags)
+	if err != nil {
+		return nil, err
+	}
+	req.Tags = tags
+
 	p, err := s.repo.UpdatePost(ctx, slug, &req)
 	if err != nil {
 		return nil, err
@@ -160,11 +192,22 @@ func (s *Service) DeletePost(ctx context.Context, viewer Viewer, slug string) er
 	return err
 }
 
-// ListTags 返回标签。匿名查询只聚合至少被一篇已发布文章使用的标签，
-// 作者查询返回全部标签。
-func (s *Service) ListTags(ctx context.Context, viewer Viewer) ([]Tag, error) {
-	if viewer.IsOwner {
-		return s.repo.ListTags(ctx)
+// ListTags 按类型返回标签。匿名只读取已发布文章使用的标签。
+// 未指定类型时，匿名返回文章标签，作者返回内容使用的标签供列表筛选。
+func (s *Service) ListTags(ctx context.Context, viewer Viewer, kind string) ([]Tag, error) {
+	if kind != "" {
+		if err := checkKind(kind); err != nil {
+			return nil, err
+		}
 	}
-	return s.repo.ListPublicTags(ctx)
+	if viewer.IsOwner {
+		return s.repo.ListTags(ctx, kind)
+	}
+	if kind == "" {
+		kind = KindArticle
+	}
+	if kind == KindEssay {
+		return nil, ErrUnauthorized
+	}
+	return s.repo.ListPublicTags(ctx, kind)
 }

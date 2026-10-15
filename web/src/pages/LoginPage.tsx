@@ -9,7 +9,7 @@ function safeNext(raw: string | null) {
   try {
     const target = new URL(raw, window.location.origin)
     if (target.origin !== window.location.origin) return '/editor'
-    if (target.pathname !== '/editor' && !target.pathname.startsWith('/editor/')) return '/editor'
+    if (target.pathname !== '/essays' && target.pathname !== '/editor' && !target.pathname.startsWith('/editor/')) return '/editor'
     return `${target.pathname}${target.search}${target.hash}`
   } catch {
     return '/editor'
@@ -63,7 +63,7 @@ export default function LoginPage() {
           />
           {error && <p id="owner-login-error" className="owner-login-form__error" role="alert">{error}</p>}
           <button type="submit" disabled={!password || loading}>
-            {loading ? '正在验证…' : '进入编辑器'}
+            {loading ? '正在验证…' : next.startsWith('/essays') ? '继续浏览随笔' : '进入编辑器'}
           </button>
         </form>
 

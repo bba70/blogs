@@ -33,7 +33,9 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:-blogs}
       DB_NAME: ${DB_NAME:-blogs}
       DB_SSLMODE: disable
-      AUTH_PASSWORD_HASH: ${AUTH_PASSWORD_HASH:?AUTH_PASSWORD_HASH is required}
+      # The API validates that at least one password option is configured.
+      AUTH_PASSWORD: ${AUTH_PASSWORD:-}
+      AUTH_PASSWORD_HASH: ${AUTH_PASSWORD_HASH:-}
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:?AUTH_JWT_SECRET is required}
       AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:?AUTH_COOKIE_SECURE is required}
       AUTH_ALLOWED_ORIGINS: ${AUTH_ALLOWED_ORIGINS:?AUTH_ALLOWED_ORIGINS is required}

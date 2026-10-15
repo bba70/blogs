@@ -1,0 +1,120 @@
+/* Self-hosted Google Fonts (SIL OFL). These subsets cover the fixed hero copy;
+   regenerate them when changing that copy. Dynamic article text uses the site font. */
+@font-face {
+  font-family: "Home Noto Serif SC";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/noto-serif-sc-home.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Home Noto Sans SC";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/noto-sans-sc-home.woff2") format("woff2");
+}
+
+.home-hero__inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-height: calc(100svh - var(--header-height));
+  max-width: 1000px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin-inline: auto;
+  padding: 88px 20px 100px;
+  text-align: center;
+}
+
+.home-hero__welcome,
+.home-hero__description {
+  font-family: "Home Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+  font-weight: 400;
+}
+
+.home-hero__welcome {
+  margin: 0 0 32px;
+  color: #5266a0;
+  font-size: clamp(14px, 1.3vw, 17px);
+  line-height: 1.8;
+  letter-spacing: 0.08em;
+}
+
+.home-hero__title {
+  display: flex;
+  max-width: 100%;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.18em;
+  margin: 0;
+  color: #18232f;
+  font-family: "Home Noto Serif SC", "Songti SC", "SimSun", serif;
+  font-size: clamp(3.5rem, 8vw, 6.75rem);
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+
+.home-hero__intro {
+  flex-shrink: 0;
+  font-size: 0.52em;
+  letter-spacing: 0;
+}
+
+.home-hero__name { white-space: nowrap; }
+
+.home-hero__description {
+  max-width: 100%;
+  margin: 24px 0 0;
+  color: #4f6070;
+  font-size: clamp(16px, 1.65vw, 21px);
+  line-height: 1.9;
+  letter-spacing: 0.035em;
+}
+
+.home-hero__description > span { display: block; }
+
+.home-hero__latest {
+  display: flex;
+  min-height: 28px;
+  max-width: 100%;
+  align-items: center;
+  gap: 8px;
+  margin-top: 32px;
+  color: #5c6b7b;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.home-hero__socials {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+@media (max-width: 480px) {
+  .home-hero__welcome { margin-bottom: 24px; letter-spacing: 0.04em; }
+  .home-hero__title { gap: 0.12em; }
+  .home-hero__description { margin-top: 22px; letter-spacing: 0; }
+}
+
+.home-hero .hero-scroll { width: 44px; height: 44px; }
+.home-hero .hero-scroll:focus-visible { outline: 2px solid var(--color-primary); outline-offset: 4px; }
+.home-featured .featured-post-cover { transition: transform 220ms ease; }
+@media (hover: hover) and (pointer: fine) {
+  .home-featured:hover .featured-post-cover { transform: scale(1.015); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .home-featured .featured-post-cover { transition: none; transform: none; }
+  .home-hero .hero-scroll:hover { transform: translateX(-50%); }
+  .home-hero .social-button:hover { transform: none; }
+}
+@media (hover: none), (pointer: coarse) {
+  .home-hero .hero-scroll:hover { transform: translateX(-50%); }
+  .home-hero .social-button:hover { transform: none; }
+}

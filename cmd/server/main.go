@@ -20,6 +20,7 @@ import (
 	"github.com/bba70/blogs/internal/module/auth"
 	blogModule "github.com/bba70/blogs/internal/module/blog"
 	"github.com/bba70/blogs/internal/module/media"
+	"github.com/bba70/blogs/internal/module/profile"
 )
 
 func main() {
@@ -61,6 +62,7 @@ func main() {
 		os.Exit(1)
 	}
 	mediaHandler := media.NewHandler(media.NewService(imageStorage), imageStorage)
+	profileHandler := profile.NewHandler(profile.NewService(profile.NewRepository(pool), imageStorage))
 
 	authHandler := auth.NewHandler(authSvc, auth.NewLoginLimiter(), cfg.Auth.CookieSecure)
 	authMw := auth.NewMiddleware(authSvc)
@@ -90,6 +92,8 @@ func main() {
 		r.Mount("/auth", authHandler.Routes())
 		blogModule.RegisterRoutes(r, handler, authMw.RequireOwner)
 		r.Mount("/media", mediaHandler.Routes(authMw.RequireOwner))
+		// 头像对访客公开，修改头像走 ownerOnly 强制作者身份。
+		r.Mount("/profile", profileHandler.Routes(authMw.RequireOwner))
 	})
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {

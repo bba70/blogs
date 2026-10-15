@@ -36,7 +36,7 @@ type DBConfig struct {
 // AuthConfig 承载单作者认证配置。密码哈希与 JWT 密钥缺失或非法时，
 // 服务器必须在监听端口前终止启动，不允许降级为无认证运行。
 type AuthConfig struct {
-	// PasswordHash 是作者密码的 bcrypt 哈希，必填。
+	// PasswordHash 优先读取 AUTH_PASSWORD_HASH，否则由 AUTH_PASSWORD 生成。
 	PasswordHash string
 	// JWTSecret 是 HS256 会话签名密钥，必填且不少于 MinJWTSecretLen 字节。
 	JWTSecret string
@@ -76,6 +76,21 @@ func Load() (*Config, error) {
 			JWTSecret:      os.Getenv("AUTH_JWT_SECRET"),
 			AllowedOrigins: parseOrigins(envStr("AUTH_ALLOWED_ORIGINS", defaultLocalOrigins)),
 		},
+	}
+
+	if cfg.Auth.PasswordHash == "" {
+		password := os.Getenv("AUTH_PASSWORD")
+		if password == "" {
+			return nil, fmt.Errorf("AUTH_PASSWORD or AUTH_PASSWORD_HASH is required")
+		}
+		if len(password) > 72 {
+			return nil, fmt.Errorf("AUTH_PASSWORD must be at most 72 bytes")
+		}
+		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+		if err != nil {
+			return nil, fmt.Errorf("could not hash AUTH_PASSWORD")
+		}
+		cfg.Auth.PasswordHash = string(hash)
 	}
 
 	secure, present := os.LookupEnv("AUTH_COOKIE_SECURE")

@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { useParams, Link } from 'react-router'
 import { useAuthStore, usePostStore } from '@/stores'
+import AuthorAvatar from '@/components/AuthorAvatar'
 import LoadingSpinner from '@/components/LoadingSpinner'
 import ErrorMessage from '@/components/ErrorMessage'
 import MarkdownRenderer from '@/modules/editor/MarkdownRenderer'
@@ -31,18 +32,29 @@ export default function PostDetailPage() {
   const { currentPost, loading, error, fetchPost } = usePostStore()
   const authenticated = useAuthStore((state) => state.authenticated)
 
+  useLayoutEffect(() => {
+    // Route navigation keeps the list's scroll offset; start each article at its header.
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+  }, [slug])
+
   useEffect(() => {
     if (slug) fetchPost(slug)
-  }, [slug, fetchPost])
+  }, [slug, fetchPost, authenticated])
 
   if (loading) return <div className="post-detail-state"><LoadingSpinner /></div>
   if (error) return <div className="post-detail-state"><ErrorMessage message={error} onRetry={() => slug && fetchPost(slug)} /></div>
-  if (!currentPost) return <div className="post-detail-state"><ErrorMessage message="文章不存在" /></div>
+  if (!currentPost || currentPost.slug !== slug) return <div className="post-detail-state"><LoadingSpinner /></div>
+  if (!authenticated && (currentPost.status === 'draft' || currentPost.kind === 'essay')) {
+    return <div className="post-detail-state"><LoadingSpinner /></div>
+  }
 
-  const publishedDate = currentPost.published_at ?? currentPost.created_at
+  const publishedDate = currentPost.status === 'draft' ? currentPost.created_at : currentPost.published_at ?? currentPost.created_at
+  const isEssay = currentPost.kind === 'essay'
+  const contentLabel = isEssay ? '随笔' : '文章'
+  const listPath = isEssay ? '/essays' : '/blog'
 
   return (
-    <article className="post-detail-page">
+    <article className={`post-detail-page${isEssay ? ' post-detail-page--essay' : ''}`}>
       <ReadingProgress key={currentPost.slug} contentRef={contentRef} />
       <header className="post-detail-hero">
         <PostCover src={currentPost.cover_url} className="post-detail-cover" />
@@ -54,21 +66,35 @@ export default function PostDetailPage() {
         <div className="post-detail-hero__shade" aria-hidden="true" />
 
         <div className="post-detail-shell post-detail-hero__inner">
-          <Link to="/blog" className="post-detail-back">
-            <span aria-hidden="true">←</span> 全部文章
-          </Link>
+          <div className="post-detail-hero__actions">
+            <Link to={listPath} className="post-detail-back">
+              <span aria-hidden="true">←</span> 全部{contentLabel}
+            </Link>
+            {authenticated && (
+              <Link
+                to={`/editor/${encodeURIComponent(currentPost.slug)}`}
+                className="post-detail-back post-detail-edit"
+                aria-label={`继续编辑${contentLabel}`}
+              >
+                继续编辑
+              </Link>
+            )}
+          </div>
 
           <div className="post-detail-hero__content">
             <div className="post-detail-hero__tags">
               {currentPost.status === 'draft' && <span className="post-detail-hero__draft">草稿</span>}
+              {currentPost.kind === 'essay' && (
+                <span className="post-detail-hero__draft">随笔</span>
+              )}
               {currentPost.tags.slice(0, 4).map((tag) => (
-                <Link key={tag} to={`/blog?tag=${encodeURIComponent(tag)}`}>#{tag}</Link>
+                <Link key={tag} to={`/topics?tag=${encodeURIComponent(tag)}`}>#{tag}</Link>
               ))}
             </div>
             <h1>{currentPost.title}</h1>
             {currentPost.summary && <p className="post-detail-hero__summary">{currentPost.summary}</p>}
             <div className="post-detail-hero__meta">
-              <time dateTime={publishedDate}>发布于 {formatDate(publishedDate)}</time>
+              <time dateTime={publishedDate}>{currentPost.status === 'draft' ? '创建于' : '发布于'} {formatDate(publishedDate)}</time>
               <span aria-hidden="true">·</span>
               <span>约 {characterCount(currentPost.content)} 字</span>
               <span aria-hidden="true">·</span>
@@ -80,7 +106,7 @@ export default function PostDetailPage() {
 
       <div className="post-detail-shell post-detail-layout">
         <main className="post-detail-content-card">
-          {currentPost.summary && (
+          {!isEssay && currentPost.summary && (
             <aside className="post-detail-lead" aria-label="文章摘要">
               <span>摘要</span>
               <p>{currentPost.summary}</p>
@@ -96,13 +122,13 @@ export default function PostDetailPage() {
               <span>最后更新</span>
               <time dateTime={currentPost.updated_at}>{formatDate(currentPost.updated_at)}</time>
             </div>
-            {authenticated && <Link to={`/editor/${currentPost.slug}`}>编辑文章</Link>}
+            {authenticated && <Link to={`/editor/${encodeURIComponent(currentPost.slug)}`}>编辑{contentLabel}</Link>}
           </footer>
         </main>
 
-        <aside className="post-detail-sidebar" aria-label="文章侧栏">
+        {!isEssay && <aside className="post-detail-sidebar" aria-label="文章侧栏">
           <section className="post-detail-side-card post-detail-author">
-            <div className="post-detail-author__avatar" aria-hidden="true"><span className="profile-mark" /></div>
+            <AuthorAvatar className="post-detail-author__avatar" editable={false} />
             <h2>bba70</h2>
             <p>独立开发者 / 写作者</p>
             <p className="post-detail-author__bio">在代码、产品与日常之间，记录值得长期保留的想法。</p>
@@ -119,7 +145,7 @@ export default function PostDetailPage() {
             {currentPost.tags.length > 0 && (
               <div className="post-detail-info__tags">
                 {currentPost.tags.map((tag) => (
-                  <Link key={tag} to={`/blog?tag=${encodeURIComponent(tag)}`}>#{tag}</Link>
+                  <Link key={tag} to={`/topics?tag=${encodeURIComponent(tag)}`}>#{tag}</Link>
                 ))}
               </div>
             )}
@@ -130,7 +156,7 @@ export default function PostDetailPage() {
             <p>专注于内容本身。如果这篇文章带来一点启发，欢迎继续浏览同主题的记录。</p>
             <Link to="/blog">返回全部文章 <span aria-hidden="true">→</span></Link>
           </section>
-        </aside>
+        </aside>}
       </div>
     </article>
   )
